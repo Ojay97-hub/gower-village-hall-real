@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
 import { useEvents, Event, RegularActivity } from '../context/EventContext';
 import { useAuth } from '../context/AuthContext';
 import { EventForm } from '../components/events/EventForm';
 import { RegularActivityForm } from '../components/events/RegularActivityForm';
 import {
-    Calendar, Clock, MapPin, Plus, Edit2, Trash2, LogIn, AlertTriangle, X,
+    Calendar, Clock, MapPin, Plus, Edit2, Trash2, AlertTriangle, X,
     Coffee, Palette, Music, Users, Star, BookOpen, Heart, Smile
 } from 'lucide-react';
 
@@ -208,7 +207,7 @@ export function Events() {
                 <div className="flex justify-between items-center mb-12">
                     <h2 className="text-2xl font-bold text-gray-900">Upcoming Events</h2>
 
-                    {isAdmin ? (
+                    {isAdmin && (
                         <button
                             onClick={handleCreate}
                             className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
@@ -216,14 +215,6 @@ export function Events() {
                             <Plus className="w-5 h-5" />
                             Add Event
                         </button>
-                    ) : (
-                        <Link
-                            to="/admin/login"
-                            className="flex items-center gap-2 text-primary-600 hover:text-primary-700 transition-colors"
-                        >
-                            <LogIn className="w-5 h-5" />
-                            Admin Login
-                        </Link>
                     )}
                 </div>
 
