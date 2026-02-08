@@ -195,11 +195,12 @@ export function Hall() {
       {/* Hero Section - Split Design */}
       <section className="relative md:h-[600px] grid grid-cols-1 md:grid-cols-2">
         {/* Left Side - Hall Entrance with Text Overlay */}
-        <div className="relative overflow-hidden min-h-[500px] md:min-h-0">
+        <div className="relative md:h-full" style={{ minHeight: '500px', maxHeight: '900px' }}>
           <ImageWithFallback
             src={hallGateEntrance}
             alt="Village Hall Entrance with Gate"
             className="w-full h-full object-cover"
+            style={{ maxHeight: '850px' }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/40 flex items-center">
             <div className="px-8 md:px-12 lg:px-16 text-white max-w-2xl py-12 md:py-0">
@@ -228,11 +229,12 @@ export function Hall() {
         </div>
 
         {/* Right Side - Hall Side View Image */}
-        <div className="relative overflow-hidden h-[300px] md:h-auto">
+        <div className="relative overflow-hidden h-[300px] md:h-auto" style={{ maxHeight: '850px' }}>
           <ImageWithFallback
             src={hallSideView}
             alt="Village Hall Side View"
             className="w-full h-full object-cover"
+            style={{ maxHeight: '850px' }}
           />
           <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 to-orange-800/30"></div>
         </div>
@@ -392,7 +394,15 @@ export function Hall() {
 
         {/* Activities Section */}
         <div id="activities" className="mb-20 pt-8">
-          <h2 className="mb-12 text-center">Regular Activities</h2>
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="mb-0">Regular Activities</h2>
+            <Link
+              to="/hall/events"
+              className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors font-sm shadow-sm hover:shadow"
+            >
+              View Schedule
+            </Link>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all group flex flex-col items-start border border-gray-100 overflow-hidden">
               <div className="w-full bg-gray-50 rounded-full flex items-center justify-center py-2 mb-8 group-hover:bg-primary-50 transition-colors p-2">

@@ -20,16 +20,16 @@ import oxwichCastleImg from "../assets/oxwich-castle.png";
 export function Businesses() {
   const campsites = [
     {
-      name: 'Three Cliffs Bay Holiday Park',
-      description: 'Award-winning family-friendly holiday park overlooking Three Cliffs Bay. Offering static caravans, touring pitches, and modern facilities with stunning coastal views.',
-      image: threeCliffsBayAerialImg,
-      website: 'https://www.threecliffsbay.com/'
-    },
-    {
       name: 'Nicholaston Farm Campsite',
       description: 'Peaceful working farm campsite set in beautiful Gower countryside. Just a short walk to the beach, offering a tranquil escape with traditional farm camping.',
       image: threeCliffsBayHolidayParkImg,
       website: 'https://www.nicholastonfarm.co.uk/'
+    },
+    {
+      name: 'Three Cliffs Bay Holiday Park',
+      description: 'Award-winning family-friendly holiday park overlooking Three Cliffs Bay. Offering static caravans, touring pitches, and modern facilities with stunning coastal views.',
+      image: threeCliffsBayAerialImg,
+      website: 'https://www.threecliffsbay.com/'
     }
   ];
 

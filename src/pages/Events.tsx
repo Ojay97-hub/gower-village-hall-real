@@ -4,6 +4,7 @@ import { useEvents, Event, RegularActivity } from '../context/EventContext';
 import { useAuth } from '../context/AuthContext';
 import { EventForm } from '../components/events/EventForm';
 import { RegularActivityForm } from '../components/events/RegularActivityForm';
+import { ActivityCalendar } from '../components/events/ActivityCalendar';
 import {
     Calendar, Clock, MapPin, Plus, Edit2, Trash2, AlertTriangle, X,
     Coffee, Palette, Music, Users, Star, BookOpen, Heart, Smile
@@ -204,6 +205,20 @@ export function Events() {
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+
+                {/* Calendar Section */}
+                <div className="mb-16">
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <span className="inline-block px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-medium mb-4">
+                                At a Glance
+                            </span>
+                            <h2 className="text-2xl font-bold text-gray-900">Activity Calendar</h2>
+                        </div>
+                    </div>
+                    <ActivityCalendar />
+                </div>
+
                 <div className="flex justify-between items-center mb-12">
                     <h2 className="text-2xl font-bold text-gray-900">Upcoming Events</h2>
 
