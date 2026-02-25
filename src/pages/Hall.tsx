@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-import { Clock, Car, Music, Palette, Coffee, PoundSterling, Plus, Edit2, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Clock, Car, Music, Palette, Coffee, PoundSterling, Plus, Edit2, Trash2, AlertTriangle, X, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useGallery, GalleryImage } from '../context/GalleryContext';
 import { useAuth } from '../context/AuthContext';
 import { GalleryImageForm } from '../components/gallery/GalleryImageForm';
@@ -87,8 +87,69 @@ export function Hall() {
   const [draggedImage, setDraggedImage] = useState<GalleryImage | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // Booking form state
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    date: '',
+    details: '',
+  });
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [bookingStatus, setBookingStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [bookingError, setBookingError] = useState('');
+
   // Use database images if available, or if admin is logged in (to see empty state), otherwise use defaults
   const displayImages = (isAdmin || galleryImages.length > 0) ? galleryImages : defaultGalleryImages;
+
+  // Booking form handlers
+  const handleBookingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setBookingForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleBookingSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBookingSubmitting(true);
+    setBookingStatus('idle');
+    setBookingError('');
+
+    const formspreeId = import.meta.env.VITE_FORMSPREE_FORM_ID;
+    if (!formspreeId) {
+      setBookingStatus('error');
+      setBookingError('Form is not configured yet. Please contact us directly.');
+      setBookingSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://formspree.io/f/${formspreeId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: bookingForm.name,
+          email: bookingForm.email,
+          phone: bookingForm.phone || 'Not provided',
+          preferred_date: bookingForm.date || 'Not specified',
+          event_details: bookingForm.details,
+          _subject: `Hall Booking Enquiry from ${bookingForm.name}`,
+        }),
+      });
+
+      if (response.ok) {
+        setBookingStatus('success');
+        setBookingForm({ name: '', email: '', phone: '', date: '', details: '' });
+      } else {
+        const data = await response.json().catch(() => null);
+        setBookingStatus('error');
+        setBookingError(data?.error || 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setBookingStatus('error');
+      setBookingError('Network error. Please check your connection and try again.');
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
 
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, image: GalleryImage) => {
@@ -310,7 +371,30 @@ export function Hall() {
             <div className="flex flex-col">
               <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg flex-grow">
                 <h3 className="mb-6">Booking Enquiry Form</h3>
-                <form className="space-y-5">
+
+                {/* Success Message */}
+                {bookingStatus === 'success' && (
+                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-green-800 font-medium text-sm">Enquiry sent successfully!</p>
+                      <p className="text-green-700 text-sm mt-1">We'll get back to you as soon as possible.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {bookingStatus === 'error' && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-red-800 font-medium text-sm">Failed to send enquiry</p>
+                      <p className="text-red-700 text-sm mt-1">{bookingError}</p>
+                    </div>
+                  </div>
+                )}
+
+                <form className="space-y-5" onSubmit={handleBookingSubmit}>
                   <div>
                     <label htmlFor="name" className="block text-sm mb-2 text-gray-700 font-medium">
                       Name <span className="text-red-500">*</span>
@@ -318,8 +402,12 @@ export function Hall() {
                     <input
                       type="text"
                       id="name"
+                      name="name"
+                      value={bookingForm.name}
+                      onChange={handleBookingChange}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                       required
+                      disabled={bookingSubmitting}
                     />
                   </div>
 
@@ -330,8 +418,12 @@ export function Hall() {
                     <input
                       type="email"
                       id="email"
+                      name="email"
+                      value={bookingForm.email}
+                      onChange={handleBookingChange}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                       required
+                      disabled={bookingSubmitting}
                     />
                   </div>
 
@@ -342,7 +434,11 @@ export function Hall() {
                     <input
                       type="tel"
                       id="phone"
+                      name="phone"
+                      value={bookingForm.phone}
+                      onChange={handleBookingChange}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      disabled={bookingSubmitting}
                     />
                   </div>
 
@@ -353,8 +449,12 @@ export function Hall() {
                     <input
                       type="text"
                       id="date"
+                      name="date"
+                      value={bookingForm.date}
+                      onChange={handleBookingChange}
                       placeholder="dd/mm/yyyy"
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      disabled={bookingSubmitting}
                     />
                   </div>
                   <div>
@@ -363,18 +463,30 @@ export function Hall() {
                     </label>
                     <textarea
                       id="details"
+                      name="details"
+                      value={bookingForm.details}
+                      onChange={handleBookingChange}
                       rows={4}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
                       placeholder="Please tell us about your event, expected number of guests, and any special requirements..."
                       required
+                      disabled={bookingSubmitting}
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm hover:shadow"
+                    disabled={bookingSubmitting}
+                    className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm hover:shadow disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Submit Enquiry
+                    {bookingSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Submit Enquiry'
+                    )}
                   </button>
                 </form>
               </div>
