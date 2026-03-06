@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
+
 @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Lato:wght@300;400;700&display=swap');
 
 @theme {

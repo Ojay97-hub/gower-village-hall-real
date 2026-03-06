@@ -1,11 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isDesktopNav, setIsDesktopNav] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 848 : false
+  );
   const location = useLocation();
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 848px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktopNav(event.matches);
+    };
+
+    setIsDesktopNav(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDesktopNav && isMenuOpen) {
+      setIsMenuOpen(false);
+      setActiveDropdown(null);
+    }
+  }, [isDesktopNav, isMenuOpen]);
 
   const navItems = [
     { label: "Home", path: "/" },
@@ -13,13 +37,13 @@ export function Header() {
       label: "The Hall",
       path: "/hall",
       children: [
-        { label: "Overview", path: "/hall" },
         { label: "Events Schedule", path: "/hall/events" }
       ]
     },
     { label: "Churches", path: "/churches" },
     { label: "Committee", path: "/committee" },
     { label: "Businesses", path: "/businesses" },
+    { label: "Blog", path: "/blog" },
     { label: "Contact", path: "/contact" },
   ];
 
@@ -56,7 +80,7 @@ export function Header() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-2">
+            <nav className={`${isDesktopNav ? "flex" : "hidden"} items-center space-x-2`}>
               {navItems.map((item) => (
                 <div key={item.path} className="relative group">
                   {item.children ? (
@@ -65,7 +89,8 @@ export function Header() {
                       onMouseEnter={() => setActiveDropdown(item.label)}
                       onMouseLeave={() => setActiveDropdown(null)}
                     >
-                      <button
+                      <Link
+                        to={item.path}
                         className={`px-5 py-2 rounded-lg transition-colors flex items-center gap-4 ${isActive(item.path)
                           ? "bg-primary-600 text-white"
                           : "text-gray-700 hover:bg-gray-100"
@@ -73,7 +98,7 @@ export function Header() {
                       >
                         {item.label}
                         <ChevronDown className="w-4 h-4" />
-                      </button>
+                      </Link>
 
                       {activeDropdown === item.label && (
                         <div className="absolute top-full left-0 w-48 pt-2">
@@ -109,7 +134,7 @@ export function Header() {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2"
+              className={`${isDesktopNav ? "hidden" : "block"} p-2`}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? (
@@ -121,8 +146,8 @@ export function Header() {
           </div>
 
           {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <nav className="md:hidden pb-4 space-y-1">
+          {isMenuOpen && !isDesktopNav && (
+            <nav className="pb-4 space-y-1">
               {navItems.map((item) => (
                 <div key={item.path}>
                   {item.children ? (
@@ -130,8 +155,8 @@ export function Header() {
                       <button
                         onClick={() => setActiveDropdown(activeDropdown === item.label ? null : item.label)}
                         className={`w-full flex items-center justify-between px-4 py-2 text-left rounded-md transition-colors ${isActive(item.path) || activeDropdown === item.label
-                            ? "bg-primary-50 text-primary-700 font-medium"
-                            : "text-gray-700 hover:bg-gray-50"
+                          ? "bg-primary-50 text-primary-700 font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
                           }`}
                       >
                         {item.label}
@@ -143,14 +168,24 @@ export function Header() {
 
                       {activeDropdown === item.label && (
                         <div className="bg-gray-50 py-2 space-y-1">
+                          <Link
+                            to={item.path}
+                            onClick={() => setIsMenuOpen(false)}
+                            className={`block px-8 py-2 text-sm transition-colors ${location.pathname === item.path
+                              ? "text-primary-700 font-medium"
+                              : "text-gray-600 hover:text-gray-900"
+                              }`}
+                          >
+                            Overview
+                          </Link>
                           {item.children.map((child) => (
                             <Link
                               key={child.path}
                               to={child.path}
                               onClick={() => setIsMenuOpen(false)}
                               className={`block px-8 py-2 text-sm transition-colors ${location.pathname === child.path
-                                  ? "text-primary-700 font-medium"
-                                  : "text-gray-600 hover:text-gray-900"
+                                ? "text-primary-700 font-medium"
+                                : "text-gray-600 hover:text-gray-900"
                                 }`}
                             >
                               {child.label}
@@ -164,8 +199,8 @@ export function Header() {
                       to={item.path}
                       onClick={() => setIsMenuOpen(false)}
                       className={`block px-4 py-2 rounded-md transition-colors ${isActive(item.path)
-                          ? "bg-primary-600 text-white"
-                          : "text-gray-700 hover:bg-primary-50"
+                        ? "bg-primary-600 text-white"
+                        : "text-gray-700 hover:bg-primary-50"
                         }`}
                     >
                       {item.label}

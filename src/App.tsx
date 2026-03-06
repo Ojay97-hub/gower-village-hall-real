@@ -9,6 +9,8 @@ import { Committee } from './pages/Committee';
 import { Businesses } from './pages/Businesses';
 import { Contact } from './pages/Contact';
 import { Events } from './pages/Events';
+import { Blog } from './pages/Blog';
+import { ArticlePage } from './pages/ArticlePage';
 import { AdminLogin } from './pages/AdminLogin';
 
 export default function App() {
@@ -25,6 +27,8 @@ export default function App() {
             <Route path="/churches" element={<Churches />} />
             <Route path="/committee" element={<Committee />} />
             <Route path="/businesses" element={<Businesses />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<ArticlePage />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/admin/login" element={<AdminLogin />} />
           </Routes>

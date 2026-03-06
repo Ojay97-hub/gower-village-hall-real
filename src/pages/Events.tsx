@@ -262,7 +262,7 @@ export function Events() {
                                 key={event.id}
                                 className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden"
                             >
-                                <div className="p-6 md:p-8 flex gap-6 md:gap-8">
+                                <div className="p-4 sm:p-6 md:p-8 flex gap-4 sm:gap-6 md:gap-8">
                                     {/* Date Side - Always on left */}
                                     <div className="flex-shrink-0">
                                         <div className="w-16 h-16 md:w-20 md:h-20 bg-primary-50 rounded-2xl flex flex-col items-center justify-center border border-primary-100 group-hover:bg-primary-600 group-hover:border-primary-600 transition-colors duration-300 shadow-sm">
@@ -277,34 +277,34 @@ export function Events() {
 
                                     {/* Content Side */}
                                     <div className="flex-grow min-w-0">
-                                        <div className="flex justify-between items-center gap-4">
-                                            <h3 className="text-2xl font-bold text-gray-900 leading-tight group-hover:text-primary-600 transition-colors duration-200">
+                                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4 w-full">
+                                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight group-hover:text-primary-600 transition-colors min-w-0 flex-1">
                                                 {event.title}
                                             </h3>
 
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                <span className="inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold bg-primary-100 text-primary-800 tracking-wide uppercase">
+                                            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                                                <span className="inline-flex items-center px-4 mt-2 md:mt-0 py-1 md:py-2 rounded-full text-xs font-semibold bg-primary-100 text-primary-800 uppercase tracking-wide">
                                                     {event.type || 'Event'}
                                                 </span>
 
                                                 {/* Admin Actions */}
                                                 {isAdmin && (
-                                                    <>
+                                                    <div className="flex items-center gap-1 md:gap-2">
                                                         <button
                                                             onClick={() => handleEdit(event)}
-                                                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
+                                                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition"
                                                             title="Edit"
                                                         >
                                                             <Edit2 className="w-5 h-5" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteClick(event)}
-                                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
                                                             title="Delete"
                                                         >
                                                             <Trash2 className="w-5 h-5" />
                                                         </button>
-                                                    </>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
