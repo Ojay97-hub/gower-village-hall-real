@@ -1,9 +1,15 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, ChevronRight } from "lucide-react";
-import { blogPosts } from "../data/blogData";
-import type { Category } from "../data/blogData";
+import { ArrowLeft, Calendar, Clock, ChevronRight, Loader2 } from "lucide-react";
+import type { Category } from "../types/blog";
 import { Users, TreePine, Megaphone } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
+import fallbackCommunity from "../assets/busy-hall-pic.jpeg";
+import fallbackEvents from "../assets/cake-morning-summer.jpeg";
+import fallbackNature from "../assets/bell-flower.jpeg";
+import fallbackHeritage from "../assets/st-nicholas-church.png";
+import { useBlog } from "../context/BlogContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const categoryIcons: Record<Exclude<Category, "All">, React.ReactNode> = {
     Community: <Users style={{ width: "16px", height: "16px" }} />,
@@ -19,14 +25,49 @@ const categoryColorStyles: Record<Exclude<Category, "All">, React.CSSProperties>
     Heritage: { backgroundColor: "rgba(154, 80, 20, 0.1)", color: "#9a5014", borderColor: "rgba(154, 80, 20, 0.2)" },
 };
 
+const categoryFallbackImages: Record<Exclude<Category, "All">, string> = {
+    Community: fallbackCommunity,
+    Events: fallbackEvents,
+    Nature: fallbackNature,
+    Heritage: fallbackHeritage,
+};
+
 export function ArticlePage() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
+    const { posts, loading } = useBlog();
 
-    const currentIndex = blogPosts.findIndex((p) => p.slug === slug);
-    const post = blogPosts[currentIndex];
-    const nextPost = blogPosts[(currentIndex + 1) % blogPosts.length];
-    const prevPost = blogPosts[(currentIndex - 1 + blogPosts.length) % blogPosts.length];
+    // Helper to calculate reading time
+    const getReadTime = (content: string) => {
+        const words = content.trim().split(/\s+/).length;
+        const mins = Math.ceil(words / 200);
+        return `${mins} min read`;
+    };
+
+    // Helper to format date
+    const formatDate = (isoString: string | null) => {
+        if (!isoString) return "";
+        return new Date(isoString).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    if (loading && posts.length === 0) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            </div>
+        );
+    }
+
+    const currentIndex = posts.findIndex((p) => p.slug === slug);
+    const post = posts[currentIndex];
+    
+    // Only determine next/prev if we found the post and have multiple posts
+    const nextPost = posts.length > 1 && currentIndex !== -1 ? posts[(currentIndex + 1) % posts.length] : null;
+    const prevPost = posts.length > 1 && currentIndex !== -1 ? posts[(currentIndex - 1 + posts.length) % posts.length] : null;
 
     if (!post) {
         return (
@@ -67,9 +108,9 @@ export function ArticlePage() {
     return (
         <div className="min-h-screen" style={{ backgroundColor: "#f8f7f4" }}>
             {/* Hero Image */}
-            <div className="relative overflow-hidden" style={{ height: "400px" }}>
+            <div className="relative overflow-hidden bg-gray-100" style={{ height: "400px" }}>
                 <img
-                    src={post.image}
+                    src={post.hero_image_url || categoryFallbackImages[post.category as Exclude<Category, "All">]}
                     alt={post.title}
                     className="w-full h-full"
                     style={{ objectFit: "cover" }}
@@ -145,12 +186,17 @@ export function ArticlePage() {
                     <div className="flex items-center" style={{ gap: "16px", fontSize: "0.85rem", color: "#888" }}>
                         <span className="inline-flex items-center" style={{ gap: "6px" }}>
                             <Calendar style={{ width: "14px", height: "14px" }} />
-                            {post.date}
+                            {formatDate(post.published_at || post.created_at)}
                         </span>
                         <span className="inline-flex items-center" style={{ gap: "6px" }}>
                             <Clock style={{ width: "14px", height: "14px" }} />
-                            {post.readTime}
+                            {getReadTime(post.content_markdown)}
                         </span>
+                        {!post.published && (
+                            <span className="inline-flex items-center bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-bold">
+                                DRAFT
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -187,19 +233,10 @@ export function ArticlePage() {
                 <div style={{ height: "1px", backgroundColor: "#e5e5e0", marginBottom: "32px" }} />
 
                 {/* Body Content */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                    {post.content.map((paragraph, i) => (
-                        <p
-                            key={i}
-                            style={{
-                                fontSize: "1.05rem",
-                                lineHeight: 1.85,
-                                color: "#444",
-                            }}
-                        >
-                            {paragraph}
-                        </p>
-                    ))}
+                <div className="prose prose-lg prose-primary max-w-none" style={{ display: "flex", flexDirection: "column", gap: "24px", color: "#444" }}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {post.content_markdown}
+                    </ReactMarkdown>
                 </div>
 
                 {/* Divider */}
@@ -228,116 +265,120 @@ export function ArticlePage() {
                         }}
                     >
                         {/* Previous Article */}
-                        <Link
-                            to={`/blog/${prevPost.slug}`}
-                            className="flex rounded-xl overflow-hidden"
-                            style={{
-                                backgroundColor: "white",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                                padding: "16px",
-                                gap: "16px",
-                                textDecoration: "none",
-                                transition: "box-shadow 0.2s, transform 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                                e.currentTarget.style.transform = "translateY(-2px)";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-                                e.currentTarget.style.transform = "translateY(0)";
-                            }}
-                        >
-                            <div
-                                className="rounded-lg overflow-hidden flex-shrink-0"
-                                style={{ width: "80px", height: "80px" }}
+                        {prevPost && (
+                            <Link
+                                to={`/blog/${prevPost.slug}`}
+                                className="flex rounded-xl overflow-hidden"
+                                style={{
+                                    backgroundColor: "white",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                                    padding: "16px",
+                                    gap: "16px",
+                                    textDecoration: "none",
+                                    transition: "box-shadow 0.2s, transform 0.2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                }}
                             >
-                                <img
-                                    src={prevPost.image}
-                                    alt={prevPost.title}
-                                    className="w-full h-full"
-                                    style={{ objectFit: "cover" }}
-                                />
-                            </div>
-                            <div className="flex flex-col justify-between" style={{ minWidth: 0 }}>
-                                <div>
-                                    <p style={{ fontSize: "0.7rem", color: "#8e9a87", fontWeight: 600, textTransform: "uppercase", marginBottom: "4px" }}>
-                                        ← Previous
-                                    </p>
-                                    <h4
-                                        style={{
-                                            fontFamily: "var(--font-family-serif)",
-                                            fontSize: "0.9rem",
-                                            lineHeight: 1.35,
-                                            fontWeight: 400,
-                                            color: "#2d2d2d",
-                                            display: "-webkit-box",
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: "vertical",
-                                            overflow: "hidden",
-                                        }}
-                                    >
-                                        {prevPost.title}
-                                    </h4>
+                                <div
+                                    className="rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
+                                    style={{ width: "80px", height: "80px" }}
+                                >
+                                    <img
+                                        src={prevPost.hero_image_url || categoryFallbackImages[prevPost.category as Exclude<Category, "All">]}
+                                        alt={prevPost.title}
+                                        className="w-full h-full"
+                                        style={{ objectFit: "cover" }}
+                                    />
                                 </div>
-                            </div>
-                        </Link>
+                                <div className="flex flex-col justify-between" style={{ minWidth: 0 }}>
+                                    <div>
+                                        <p style={{ fontSize: "0.7rem", color: "#8e9a87", fontWeight: 600, textTransform: "uppercase", marginBottom: "4px" }}>
+                                            ← Previous
+                                        </p>
+                                        <h4
+                                            style={{
+                                                fontFamily: "var(--font-family-serif)",
+                                                fontSize: "0.9rem",
+                                                lineHeight: 1.35,
+                                                fontWeight: 400,
+                                                color: "#2d2d2d",
+                                                display: "-webkit-box",
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: "vertical",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            {prevPost.title}
+                                        </h4>
+                                    </div>
+                                </div>
+                            </Link>
+                        )}
 
                         {/* Next Article */}
-                        <Link
-                            to={`/blog/${nextPost.slug}`}
-                            className="flex rounded-xl overflow-hidden"
-                            style={{
-                                backgroundColor: "#5c6555",
-                                boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-                                padding: "16px",
-                                gap: "16px",
-                                textDecoration: "none",
-                                transition: "box-shadow 0.2s, transform 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
-                                e.currentTarget.style.transform = "translateY(-2px)";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.1)";
-                                e.currentTarget.style.transform = "translateY(0)";
-                            }}
-                        >
-                            <div className="flex flex-col justify-between flex-1" style={{ minWidth: 0 }}>
-                                <div>
-                                    <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", fontWeight: 600, textTransform: "uppercase", marginBottom: "4px" }}>
-                                        Read Next →
-                                    </p>
-                                    <h4
-                                        style={{
-                                            fontFamily: "var(--font-family-serif)",
-                                            fontSize: "0.9rem",
-                                            lineHeight: 1.35,
-                                            fontWeight: 400,
-                                            color: "white",
-                                            display: "-webkit-box",
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: "vertical",
-                                            overflow: "hidden",
-                                        }}
-                                    >
-                                        {nextPost.title}
-                                    </h4>
-                                </div>
-                            </div>
-                            <div
-                                className="rounded-lg overflow-hidden flex-shrink-0"
-                                style={{ width: "80px", height: "80px" }}
+                        {nextPost && (
+                            <Link
+                                to={`/blog/${nextPost.slug}`}
+                                className="flex rounded-xl overflow-hidden"
+                                style={{
+                                    backgroundColor: "#5c6555",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                                    padding: "16px",
+                                    gap: "16px",
+                                    textDecoration: "none",
+                                    transition: "box-shadow 0.2s, transform 0.2s",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.1)";
+                                    e.currentTarget.style.transform = "translateY(0)";
+                                }}
                             >
-                                <img
-                                    src={nextPost.image}
-                                    alt={nextPost.title}
-                                    className="w-full h-full"
-                                    style={{ objectFit: "cover" }}
-                                />
-                            </div>
-                        </Link>
+                                <div className="flex flex-col justify-between flex-1" style={{ minWidth: 0 }}>
+                                    <div>
+                                        <p style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", fontWeight: 600, textTransform: "uppercase", marginBottom: "4px" }}>
+                                            Read Next →
+                                        </p>
+                                        <h4
+                                            style={{
+                                                fontFamily: "var(--font-family-serif)",
+                                                fontSize: "0.9rem",
+                                                lineHeight: 1.35,
+                                                fontWeight: 400,
+                                                color: "white",
+                                                display: "-webkit-box",
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: "vertical",
+                                                overflow: "hidden",
+                                            }}
+                                        >
+                                            {nextPost.title}
+                                        </h4>
+                                    </div>
+                                </div>
+                                <div
+                                    className="rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
+                                    style={{ width: "80px", height: "80px" }}
+                                >
+                                    <img
+                                        src={nextPost.hero_image_url || categoryFallbackImages[nextPost.category as Exclude<Category, "All">]}
+                                        alt={nextPost.title}
+                                        className="w-full h-full"
+                                        style={{ objectFit: "cover" }}
+                                    />
+                                </div>
+                            </Link>
+                        )}
                     </div>
                 </div>
 

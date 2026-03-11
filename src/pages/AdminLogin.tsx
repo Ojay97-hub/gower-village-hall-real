@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, AlertCircle, Loader2, User as UserIcon, ArrowLeft, ChevronRight } from 'lucide-react';
 
@@ -7,24 +7,19 @@ import { Lock, Mail, AlertCircle, Loader2, User as UserIcon, ArrowLeft, ChevronR
 const AVAILABLE_USERS = [
     {
         id: '1',
-        name: 'Main Admin',
-        email: 'admin@penmaenvillagehall.org',
+        name: 'Owen James',
+        email: 'owenjames97@outlook.com',
         role: 'Administrator',
         avatarColor: 'bg-blue-100 text-blue-700',
-        initials: 'AD'
-    },
-    {
-        id: '2',
-        name: 'Events Manager',
-        email: 'events@penmaenvillagehall.org',
-        role: 'Event Editor',
-        avatarColor: 'bg-emerald-100 text-emerald-700',
-        initials: 'EV'
+        initials: 'OJ'
     }
 ];
 
 function getErrorMessage(error: Error): string {
     const msg = error.message?.toLowerCase() ?? '';
+    if (msg.includes('not authorized')) {
+        return error.message; // Let our custom auth message pass through
+    }
     if (msg.includes('invalid login credentials') || msg.includes('invalid_credentials')) {
         return 'Invalid email or password. Please check your credentials and try again.';
     }
@@ -58,13 +53,16 @@ export function AdminLogin() {
 
     const { signIn, isAdmin, isLoading } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    
+    const from = location.state?.from?.pathname || '/hall/events';
 
     // Auto-redirect if already authenticated
     useEffect(() => {
         if (!isLoading && isAdmin) {
-            navigate('/hall/events', { replace: true });
+            navigate(from, { replace: true });
         }
-    }, [isAdmin, isLoading, navigate]);
+    }, [isAdmin, isLoading, navigate, from]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -78,13 +76,17 @@ export function AdminLogin() {
         }
 
         const targetEmail = step === 'enter-password' && selectedUser ? selectedUser.email : email;
-        const { error } = await signIn(targetEmail, password);
+        const { error, isAdmin: signedInAsAdmin } = await signIn(targetEmail, password);
 
         if (error) {
             setError(getErrorMessage(error));
             setLoading(false);
+        } else if (signedInAsAdmin) {
+            navigate(from);
         } else {
-            navigate('/hall/events');
+            // Fallback just in case
+            setError('You are not authorized to access the admin panel.');
+            setLoading(false);
         }
     };
 

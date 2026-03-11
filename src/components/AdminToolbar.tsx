@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield, BookOpen, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function AdminToolbar() {
-    const { isAdmin, userEmail, switchUser, adminLogout } = useAuth();
+    const { isAdmin, isMasterAdmin, userEmail, switchUser, adminLogout } = useAuth();
+    const navigate = useNavigate();
     const [collapsed, setCollapsed] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -64,6 +66,24 @@ export function AdminToolbar() {
 
                         {/* Action Buttons */}
                         <div className="flex flex-col gap-2">
+                            {isMasterAdmin && (
+                                <button
+                                    onClick={() => navigate('/admin/users')}
+                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-purple-50 border border-purple-100 hover:bg-purple-100 text-purple-700 transition-all cursor-pointer shadow-sm"
+                                    title="Manage Users"
+                                >
+                                    <Users className="h-4 w-4" />
+                                    Manage Users
+                                </button>
+                            )}
+                            <button
+                                onClick={() => navigate('/admin/blog')}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white transition-all cursor-pointer shadow-sm"
+                                title="Manage Blog"
+                            >
+                                <BookOpen className="h-4 w-4" />
+                                Manage Blog
+                            </button>
                             <button
                                 onClick={switchUser}
                                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-primary-200 hover:bg-primary-50 hover:border-primary-300 text-gray-700 transition-all cursor-pointer shadow-sm"

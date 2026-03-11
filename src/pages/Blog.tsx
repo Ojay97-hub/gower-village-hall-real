@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { Search, Calendar, TreePine, Users, Megaphone, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import hallGateSunny from "../assets/hall-gate-entrance.jpg";
-import { blogPosts, categories } from "../data/blogData";
-import type { Category } from "../data/blogData";
+import fallbackCommunity from "../assets/busy-hall-pic.jpeg";
+import fallbackEvents from "../assets/cake-morning-summer.jpeg";
+import fallbackNature from "../assets/bell-flower.jpeg";
+import fallbackHeritage from "../assets/st-nicholas-church.png";
+import { categories } from "../types/blog";
+import type { Category } from "../types/blog";
+import { useBlog } from "../context/BlogContext";
+import { useAuth } from "../context/AuthContext";
+import { Loader2, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const categoryIcons: Record<Exclude<Category, "All">, React.ReactNode> = {
     Community: <Users style={{ width: "16px", height: "16px" }} />,
@@ -17,6 +25,13 @@ const categoryColorStyles: Record<Exclude<Category, "All">, React.CSSProperties>
     Events: { backgroundColor: "rgba(107, 117, 100, 0.1)", color: "#5c6555", borderColor: "rgba(107, 117, 100, 0.2)" },
     Nature: { backgroundColor: "rgba(22, 101, 52, 0.1)", color: "#166534", borderColor: "rgba(22, 101, 52, 0.2)" },
     Heritage: { backgroundColor: "rgba(154, 80, 20, 0.1)", color: "#9a5014", borderColor: "rgba(154, 80, 20, 0.2)" },
+};
+
+const categoryFallbackImages: Record<Exclude<Category, "All">, string> = {
+    Community: fallbackCommunity,
+    Events: fallbackEvents,
+    Nature: fallbackNature,
+    Heritage: fallbackHeritage,
 };
 
 function CategoryBadge({ category, size = "sm" }: { category: Exclude<Category, "All">; size?: "sm" | "md" }) {
@@ -40,8 +55,28 @@ function CategoryBadge({ category, size = "sm" }: { category: Exclude<Category, 
 export function Blog() {
     const [activeCategory, setActiveCategory] = useState<Category>("All");
     const [searchQuery, setSearchQuery] = useState("");
+    const { posts, loading } = useBlog();
+    const { isAdmin } = useAuth();
+    const navigate = useNavigate();
 
-    const filteredPosts = blogPosts.filter((post) => {
+    // Helper to calculate reading time
+    const getReadTime = (content: string) => {
+        const words = content.trim().split(/\s+/).length;
+        const mins = Math.ceil(words / 200);
+        return `${mins} min read`;
+    };
+
+    // Helper to format date
+    const formatDate = (isoString: string | null) => {
+        if (!isoString) return "";
+        return new Date(isoString).toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const filteredPosts = posts.filter((post) => {
         const matchesCategory = activeCategory === "All" || post.category === activeCategory;
         const matchesSearch =
             post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -49,9 +84,11 @@ export function Blog() {
         return matchesCategory && matchesSearch;
     });
 
-    const featuredPost = filteredPosts[0];
-    const sidePosts = filteredPosts.slice(1, 4);
-    const remainingPosts = filteredPosts.slice(4);
+    // In the new data model, we rely on the 'featured' flag or just the first item
+    const featuredPost = filteredPosts.find(p => p.featured) || filteredPosts[0];
+    const sidePosts = filteredPosts.filter(p => p.id !== featuredPost?.id).slice(0, 3);
+    const sidePostIds = new Set(sidePosts.map(p => p.id));
+    const remainingPosts = filteredPosts.filter(p => p.id !== featuredPost?.id && !sidePostIds.has(p.id));
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: "#f8f7f4" }}>
@@ -99,10 +136,21 @@ export function Blog() {
                     className="relative mx-auto blog-hero-content"
                     style={{ maxWidth: "80rem", paddingTop: "80px", paddingBottom: "80px", paddingLeft: "16px", paddingRight: "16px" }}
                 >
-                    <div className="flex items-center mb-6" style={{ gap: "8px", fontSize: "14px" }}>
-                        <Link to="/" className="text-white" style={{ opacity: 0.7 }}>Home</Link>
-                        <ChevronRight className="text-white" style={{ opacity: 0.5, width: "14px", height: "14px" }} />
-                        <span className="text-white">Blog</span>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center" style={{ gap: "8px", fontSize: "14px" }}>
+                            <Link to="/" className="text-white" style={{ opacity: 0.7 }}>Home</Link>
+                            <ChevronRight className="text-white" style={{ opacity: 0.5, width: "14px", height: "14px" }} />
+                            <span className="text-white">Blog</span>
+                        </div>
+                        {isAdmin && (
+                            <button
+                                onClick={() => navigate('/admin/blog')}
+                                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-white/20"
+                            >
+                                <Settings className="w-4 h-4" />
+                                Manage Blog
+                            </button>
+                        )}
                     </div>
 
                     <h1
@@ -179,7 +227,13 @@ export function Blog() {
                 </div>
             </section>
 
-            {/* Popular Articles Section */}
+            {loading && posts.length === 0 ? (
+                <div className="py-24 flex justify-center items-center">
+                    <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+                </div>
+            ) : (
+                <>
+                    {/* Popular Articles Section */}
             {filteredPosts.length > 0 ? (
                 <section
                     className="mx-auto blog-section"
@@ -219,7 +273,7 @@ export function Blog() {
                         {featuredPost && (
                             <Link
                                 to={`/blog/${featuredPost.slug}`}
-                                className="rounded-2xl overflow-hidden block"
+                                className="rounded-2xl overflow-hidden flex flex-col h-full"
                                 style={{
                                     backgroundColor: "white",
                                     boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
@@ -236,9 +290,9 @@ export function Blog() {
                                     e.currentTarget.style.transform = "translateY(0)";
                                 }}
                             >
-                                <div className="relative overflow-hidden" style={{ height: "340px" }}>
+                                <div className="relative overflow-hidden flex-shrink-0 bg-gray-100" style={{ height: "340px" }}>
                                     <img
-                                        src={featuredPost.image}
+                                        src={featuredPost.hero_image_url || categoryFallbackImages[featuredPost.category as Exclude<Category, "All">]}
                                         alt={featuredPost.title}
                                         className="w-full h-full"
                                         style={{
@@ -247,7 +301,7 @@ export function Blog() {
                                         }}
                                     />
                                 </div>
-                                <div style={{ padding: "28px" }}>
+                                <div className="flex flex-col flex-1" style={{ padding: "28px" }}>
                                     <h3
                                         style={{
                                             fontFamily: "var(--font-family-serif)",
@@ -260,23 +314,23 @@ export function Blog() {
                                     >
                                         {featuredPost.title}
                                     </h3>
-                                    <p className="text-sm" style={{ color: "#666", lineHeight: 1.65, marginBottom: "16px" }}>
+                                    <p className="flex-1 text-sm" style={{ color: "#666", lineHeight: 1.65, marginBottom: "16px" }}>
                                         {featuredPost.excerpt}
                                     </p>
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between mt-auto">
                                         <CategoryBadge category={featuredPost.category} size="md" />
-                                        <span style={{ fontSize: "0.75rem", color: "#999" }}>{featuredPost.date}</span>
+                                        <span style={{ fontSize: "0.75rem", color: "#999" }}>{formatDate(featuredPost.published_at || featuredPost.created_at)}</span>
                                     </div>
                                 </div>
                             </Link>
                         )}
 
-                        <div className="flex flex-col" style={{ gap: "24px" }}>
+                        <div className="flex flex-col h-full" style={{ gap: "24px" }}>
                             {sidePosts.map((post) => (
                                 <Link
                                     key={post.id}
                                     to={`/blog/${post.slug}`}
-                                    className="flex rounded-xl overflow-hidden"
+                                    className="flex rounded-xl overflow-hidden items-center"
                                     style={{
                                         backgroundColor: "white",
                                         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
@@ -296,11 +350,11 @@ export function Blog() {
                                     }}
                                 >
                                     <div
-                                        className="rounded-lg overflow-hidden flex-shrink-0"
+                                        className="rounded-lg overflow-hidden flex-shrink-0 bg-gray-100"
                                         style={{ width: "140px", height: "120px" }}
                                     >
                                         <img
-                                            src={post.image}
+                                            src={post.hero_image_url || categoryFallbackImages[post.category as Exclude<Category, "All">]}
                                             alt={post.title}
                                             className="w-full h-full"
                                             style={{ objectFit: "cover" }}
@@ -341,7 +395,7 @@ export function Blog() {
                                         <div className="flex items-center" style={{ marginTop: "8px", gap: "12px" }}>
                                             <CategoryBadge category={post.category} />
                                             <span style={{ fontSize: "0.75rem", color: "#999" }}>
-                                                {post.readTime}
+                                                {getReadTime(post.content_markdown)}
                                             </span>
                                         </div>
                                     </div>
@@ -415,9 +469,9 @@ export function Blog() {
                                     e.currentTarget.style.transform = "translateY(0)";
                                 }}
                             >
-                                <div className="relative overflow-hidden" style={{ height: "200px" }}>
+                                <div className="relative overflow-hidden bg-gray-100" style={{ height: "200px" }}>
                                     <img
-                                        src={post.image}
+                                        src={post.hero_image_url || categoryFallbackImages[post.category as Exclude<Category, "All">]}
                                         alt={post.title}
                                         className="w-full h-full"
                                         style={{
@@ -456,9 +510,9 @@ export function Blog() {
                                     <div className="flex items-center justify-between">
                                         <CategoryBadge category={post.category} />
                                         <div className="flex items-center" style={{ gap: "8px" }}>
-                                            <span style={{ fontSize: "0.75rem", color: "#999" }}>{post.date}</span>
+                                            <span style={{ fontSize: "0.75rem", color: "#999" }}>{formatDate(post.published_at || post.created_at)}</span>
                                             <span style={{ fontSize: "0.75rem", color: "#ccc" }}>·</span>
-                                            <span style={{ fontSize: "0.75rem", color: "#999" }}>{post.readTime}</span>
+                                            <span style={{ fontSize: "0.75rem", color: "#999" }}>{getReadTime(post.content_markdown)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -466,6 +520,8 @@ export function Blog() {
                         ))}
                     </div>
                 </section>
+            )}
+                </>
             )}
         </div>
     );
