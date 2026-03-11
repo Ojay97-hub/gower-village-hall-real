@@ -132,7 +132,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!checkIsMasterAdmin(user?.email)) return { error: new Error('Unauthorized') };
         
         try {
-            const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+            const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+                redirectTo: 'https://gower-village-hall-real.vercel.app/'
+            });
             if (error) return { error };
             
             if (data.user) {
