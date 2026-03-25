@@ -168,16 +168,7 @@ export function Header() {
 
                       {activeDropdown === item.label && (
                         <div className="bg-gray-50 py-2 space-y-1">
-                          <Link
-                            to={item.path}
-                            onClick={() => setIsMenuOpen(false)}
-                            className={`block px-8 py-2 text-sm transition-colors ${location.pathname === item.path
-                              ? "text-primary-700 font-medium"
-                              : "text-gray-600 hover:text-gray-900"
-                              }`}
-                          >
-                            Overview
-                          </Link>
+
                           {item.children.map((child) => (
                             <Link
                               key={child.path}
