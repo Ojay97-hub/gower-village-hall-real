@@ -64,9 +64,9 @@ export function Committee() {
                   <div className="flex items-start mb-3">
                     <FileText className="w-8 h-8 text-primary-600 mr-3 flex-shrink-0" />
                     <div>
-                      <h4 className="mb-2">
+                      <h3 className="mb-2">
                         Registered Charity
-                      </h4>
+                      </h3>
                     </div>
                   </div>
                   <p className="text-sm text-gray-700 mb-3 leading-relaxed">
@@ -93,47 +93,47 @@ export function Committee() {
 
                 {/* Chair - spans 2 columns for prominence */}
                 <div className="bg-primary-50 rounded-2xl p-6 md:col-span-2">
-                  <h4 className="mb-2">Dale Ponting</h4>
+                  <h3 className="mb-2">Dale Ponting</h3>
                   <p className="text-sm text-gray-600">Chair</p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Claire Marson</h4>
+                  <h3 className="mb-2">Claire Marson</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Cody Bates</h4>
+                  <h3 className="mb-2">Cody Bates</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Claire Cotter</h4>
+                  <h3 className="mb-2">Claire Cotter</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Brian Martin</h4>
+                  <h3 className="mb-2">Brian Martin</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Annzella Gregg</h4>
+                  <h3 className="mb-2">Annzella Gregg</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Jacquelyn Ponting</h4>
+                  <h3 className="mb-2">Jacquelyn Ponting</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
@@ -141,21 +141,21 @@ export function Committee() {
 
                 {/* Spans 2 columns for visual interest */}
                 <div className="bg-primary-50 rounded-2xl p-6 md:col-span-2">
-                  <h4 className="mb-2">Dr Sophie Henson</h4>
+                  <h3 className="mb-2">Dr Sophie Henson</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Catherine Patton</h4>
+                  <h3 className="mb-2">Catherine Patton</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
                 </div>
 
                 <div className="bg-primary-50 rounded-2xl p-6">
-                  <h4 className="mb-2">Peter Burgess</h4>
+                  <h3 className="mb-2">Peter Burgess</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>
@@ -163,7 +163,7 @@ export function Committee() {
 
                 {/* Spans 2 columns to fill the row nicely */}
                 <div className="bg-primary-50 rounded-2xl p-6 md:col-span-2">
-                  <h4 className="mb-2">Dr Jerry Kingham</h4>
+                  <h3 className="mb-2">Dr Jerry Kingham</h3>
                   <p className="text-sm text-gray-600">
                     Trustee
                   </p>

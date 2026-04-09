@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Tent, Home, UtensilsCrossed, Landmark, ExternalLink, MapPin, Target, ShoppingBag } from 'lucide-react';
 import perriswoodImg from "../assets/perriswood-archery.png";
@@ -142,6 +143,8 @@ export function Businesses() {
     }
   ];
 
+  const [mapLoaded, setMapLoaded] = useState(false);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section with Map */}
@@ -155,18 +158,30 @@ export function Businesses() {
             </div>
           </div>
 
-          {/* Right side - Map */}
-          <div className="h-64 lg:h-auto bg-gray-200 relative">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d9889.724353445883!2d-4.140629!3d51.569167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x486ef3e8c8c8c8c9%3A0x8c8c8c8c8c8c8c8c!2sPenmaen%2C%20Swansea!5e0!3m2!1sen!2suk!4v1234567890"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute inset-0"
-            ></iframe>
+          {/* Right side - Map (lazy facade to avoid third-party cookies on load) */}
+          <div className="h-64 lg:h-auto bg-gray-200 relative min-h-[256px]">
+            {mapLoaded ? (
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d9889.724353445883!2d-4.140629!3d51.569167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x486ef3e8c8c8c8c9%3A0x8c8c8c8c8c8c8c8c!2sPenmaen%2C%20Swansea!5e0!3m2!1sen!2suk!4v1234567890"
+                title="Map of Penmaen and Nicholaston, Gower"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                className="absolute inset-0"
+              />
+            ) : (
+              <button
+                onClick={() => setMapLoaded(true)}
+                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-primary-200 hover:bg-primary-300 transition-colors group cursor-pointer"
+                aria-label="Load interactive map of Penmaen and Nicholaston"
+              >
+                <MapPin className="w-10 h-10 text-primary-700 mb-3 group-hover:scale-110 transition-transform" />
+                <span className="text-primary-800 font-medium text-sm">Click to load map</span>
+                <span className="text-primary-600 text-xs mt-1">Penmaen & Nicholaston, Gower</span>
+              </button>
+            )}
           </div>
         </div>
       </section>
