@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Search, Calendar, TreePine, Users, Megaphone, ChevronRight } from "lucide-react";
-import hallGateSunny from "../assets/hall-gate-entrance.jpg";
-import fallbackCommunity from "../assets/busy-hall-pic.jpeg";
-import fallbackEvents from "../assets/cake-morning-summer.jpeg";
-import fallbackNature from "../assets/bell-flower.jpeg";
-import fallbackHeritage from "../assets/st-nicholas-church.png";
+import hallGateSunny from "../assets/hall-gate-entrance.webp";
+import fallbackCommunity from "../assets/busy-hall-pic.webp";
+import fallbackEvents from "../assets/cake-morning-summer.webp";
+import fallbackNature from "../assets/bell-flower.webp";
+import fallbackHeritage from "../assets/st-nicholas-church.webp";
 import { categories } from "../types/blog";
 import type { Category } from "../types/blog";
 import { useBlog } from "../context/BlogContext";
@@ -242,7 +242,7 @@ export function Blog() {
                     <p
                         className="text-sm"
                         style={{
-                            color: "#8e9a87",
+                            color: "#5c6555",
                             fontWeight: 600,
                             textTransform: "uppercase",
                             letterSpacing: "0.08em",
@@ -319,7 +319,7 @@ export function Blog() {
                                     </p>
                                     <div className="flex items-center justify-between mt-auto">
                                         <CategoryBadge category={featuredPost.category} size="md" />
-                                        <span style={{ fontSize: "0.75rem", color: "#999" }}>{formatDate(featuredPost.published_at || featuredPost.created_at)}</span>
+                                        <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }}>{formatDate(featuredPost.published_at || featuredPost.created_at)}</span>
                                     </div>
                                 </div>
                             </Link>
@@ -394,7 +394,7 @@ export function Blog() {
                                         </div>
                                         <div className="flex items-center" style={{ marginTop: "8px", gap: "12px" }}>
                                             <CategoryBadge category={post.category} />
-                                            <span style={{ fontSize: "0.75rem", color: "#999" }}>
+                                            <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }}>
                                                 {getReadTime(post.content_markdown)}
                                             </span>
                                         </div>
@@ -510,9 +510,9 @@ export function Blog() {
                                     <div className="flex items-center justify-between">
                                         <CategoryBadge category={post.category} />
                                         <div className="flex items-center" style={{ gap: "8px" }}>
-                                            <span style={{ fontSize: "0.75rem", color: "#999" }}>{formatDate(post.published_at || post.created_at)}</span>
-                                            <span style={{ fontSize: "0.75rem", color: "#ccc" }}>·</span>
-                                            <span style={{ fontSize: "0.75rem", color: "#999" }}>{getReadTime(post.content_markdown)}</span>
+                                            <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }}>{formatDate(post.published_at || post.created_at)}</span>
+                                            <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }} aria-hidden="true">·</span>
+                                            <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }}>{getReadTime(post.content_markdown)}</span>
                                         </div>
                                     </div>
                                 </div>

@@ -371,6 +371,7 @@ export function Businesses() {
                       href={attraction.website}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Learn more about ${attraction.name}`}
                       className="inline-flex items-center justify-center w-full px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
@@ -447,6 +448,7 @@ export function Businesses() {
                       href={castle.website}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Learn more about ${castle.name}`}
                       className="inline-flex items-center justify-center w-full px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
