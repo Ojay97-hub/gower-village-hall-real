@@ -325,67 +325,116 @@ export function CoffeeMorning() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {displayImages.map((image, index) => (
+            <>
+              {/* Mobile: touch-scroll carousel */}
+              <div className="md:hidden -mx-4 px-4">
                 <div
-                  key={image.id}
-                  draggable={isAdmin && !image.id.startsWith('default-')}
-                  onDragStart={(e) => handleDragStart(e, image)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  className={`group cursor-pointer relative overflow-hidden shadow-md rounded-lg transition-all duration-300 ${
-                    image.grid_size === 'large' ? 'md:col-span-2 md:row-span-2' : ''
-                  } ${dragOverIndex === index ? 'ring-4 ring-primary-500 ring-offset-2 scale-[1.02]' : ''
-                  } ${isAdmin && !image.id.startsWith('default-') ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-4"
+                  style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
                 >
-                  <ImageWithFallback
-                    src={image.image_url}
-                    alt={image.label}
-                    className={`w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105 ${
-                      image.grid_size === 'large' ? 'aspect-square' : 'aspect-[4/3]'
-                    }`}
-                    loading="lazy"
-                  />
-
-                  {isAdmin && mode !== 'view' && (
+                  {displayImages.map((image, index) => (
                     <div
-                      className={`absolute inset-0 z-40 transition-colors duration-200 cursor-pointer flex items-center justify-center ${
-                        mode === 'edit'
-                          ? 'hover:bg-primary-900/20 active:bg-primary-900/30 ring-inset hover:ring-4 ring-primary-500'
-                          : 'hover:bg-red-900/20 active:bg-red-900/30 ring-inset hover:ring-4 ring-red-500'
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (mode === 'edit') handleEditImage(image);
-                        if (mode === 'delete') handleDeleteClick(image);
-                      }}
+                      key={image.id}
+                      className="group relative flex-none w-72 snap-start overflow-hidden rounded-2xl shadow-md"
                     >
-                      <div className={`p-3 rounded-full shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-200 ${
-                        mode === 'edit' ? 'bg-white text-primary-600' : 'bg-white text-red-600'
-                      }`}>
-                        {mode === 'edit' ? <Edit2 className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
-                      </div>
+                      <ImageWithFallback
+                        src={image.image_url}
+                        alt={image.label}
+                        className="w-full aspect-square object-cover"
+                        loading="lazy"
+                      />
+                      {isAdmin && mode !== 'view' && (
+                        <div
+                          className={`absolute inset-0 z-40 flex items-center justify-center cursor-pointer ${
+                            mode === 'edit' ? 'bg-primary-900/20' : 'bg-red-900/20'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (mode === 'edit') handleEditImage(image);
+                            if (mode === 'delete') handleDeleteClick(image);
+                          }}
+                        >
+                          <div className={`p-3 rounded-full shadow-lg ${mode === 'edit' ? 'bg-white text-primary-600' : 'bg-white text-red-600'}`}>
+                            {mode === 'edit' ? <Edit2 className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
+                          </div>
+                        </div>
+                      )}
+                      {image.label && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                          <p className="text-white text-sm font-medium">{image.label}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-
-                  {isAdmin && (
-                    <div className="absolute top-2 left-2 p-1.5 bg-white/80 text-gray-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {image.label && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <p className="text-white text-sm font-medium">{image.label}</p>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+                {/* Scroll hint dots */}
+                <div className="flex justify-center gap-1.5 mt-2">
+                  {displayImages.map((image) => (
+                    <div key={image.id} className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Desktop: grid */}
+              <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {displayImages.map((image, index) => (
+                  <div
+                    key={image.id}
+                    draggable={isAdmin && !image.id.startsWith('default-')}
+                    onDragStart={(e) => handleDragStart(e, image)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className={`group cursor-pointer relative overflow-hidden shadow-md rounded-lg transition-all duration-300 ${
+                      image.grid_size === 'large' ? 'md:col-span-2 md:row-span-2' : ''
+                    } ${dragOverIndex === index ? 'ring-4 ring-primary-500 ring-offset-2 scale-[1.02]' : ''
+                    } ${isAdmin && !image.id.startsWith('default-') ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  >
+                    <ImageWithFallback
+                      src={image.image_url}
+                      alt={image.label}
+                      className={`w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105 ${
+                        image.grid_size === 'large' ? 'aspect-square' : 'aspect-[4/3]'
+                      }`}
+                      loading="lazy"
+                    />
+                    {isAdmin && mode !== 'view' && (
+                      <div
+                        className={`absolute inset-0 z-40 transition-colors duration-200 cursor-pointer flex items-center justify-center ${
+                          mode === 'edit'
+                            ? 'hover:bg-primary-900/20 active:bg-primary-900/30 ring-inset hover:ring-4 ring-primary-500'
+                            : 'hover:bg-red-900/20 active:bg-red-900/30 ring-inset hover:ring-4 ring-red-500'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (mode === 'edit') handleEditImage(image);
+                          if (mode === 'delete') handleDeleteClick(image);
+                        }}
+                      >
+                        <div className={`p-3 rounded-full shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-200 ${
+                          mode === 'edit' ? 'bg-white text-primary-600' : 'bg-white text-red-600'
+                        }`}>
+                          {mode === 'edit' ? <Edit2 className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
+                        </div>
+                      </div>
+                    )}
+                    {isAdmin && (
+                      <div className="absolute top-2 left-2 p-1.5 bg-white/80 text-gray-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
+                        </svg>
+                      </div>
+                    )}
+                    {image.label && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <p className="text-white text-sm font-medium">{image.label}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {showImageForm && (

@@ -249,7 +249,7 @@ export function Events() {
                     <div className="flex justify-center items-center py-20 min-h-[400px]">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                     </div>
-                ) : events.length === 0 ? (
+                ) : events.filter(event => new Date(event.date) >= new Date(new Date().toDateString())).length === 0 ? (
                     <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-200">
                         <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No upcoming events</h3>
@@ -257,7 +257,7 @@ export function Events() {
                     </div>
                 ) : (
                     <div className="grid gap-6">
-                        {events.map((event) => (
+                        {events.filter(event => new Date(event.date) >= new Date(new Date().toDateString())).map((event) => (
                             <div
                                 key={event.id}
                                 className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden"
