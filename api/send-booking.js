@@ -71,11 +71,47 @@ module.exports = async (req, res) => {
         html: confirmationHtml,
       }),
     ]);
-    return res.status(200).json({ success: true });
   } catch (err) {
     console.error('Failed to send booking email:', err.message);
     return res.status(500).json({ error: 'Failed to send email' });
   }
+
+  // Insert booking record into Supabase (best-effort — email already sent)
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceRoleKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (supabaseUrl && serviceRoleKey) {
+    try {
+      const dbRes = await fetch(`${supabaseUrl}/rest/v1/bookings`, {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          phone: phone || null,
+          date,
+          end_date: endDate || null,
+          message: details || null,
+          status: 'pending',
+        }),
+      });
+      if (!dbRes.ok) {
+        const errText = await dbRes.text();
+        console.error('Supabase booking insert failed:', dbRes.status, errText);
+      }
+    } catch (dbErr) {
+      console.error('Supabase booking insert error:', dbErr.message);
+    }
+  } else {
+    console.warn('Missing Supabase env vars — booking not saved to database');
+  }
+
+  return res.status(200).json({ success: true });
 };
 
 function escapeHtml(str) {

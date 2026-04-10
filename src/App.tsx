@@ -24,6 +24,7 @@ const ArticlePage = lazy(() => import('./pages/ArticlePage').then(m => ({ defaul
 const AdminLogin = lazy(() => import('./pages/AdminLogin').then(m => ({ default: m.AdminLogin })));
 const AdminBlog = lazy(() => import('./pages/AdminBlog').then(m => ({ default: m.AdminBlog })));
 const AdminUsers = lazy(() => import('./pages/AdminUsers').then(m => ({ default: m.AdminUsers })));
+const AdminBookings = lazy(() => import('./pages/AdminBookings').then(m => ({ default: m.AdminBookings })));
 
 /** Reverse guard: redirects to /hall/events if already logged in */
 
@@ -59,6 +60,7 @@ export default function App() {
                     {/* Protected admin routes (wrap future admin-only pages here) */}
                     <Route element={<AdminRoute />}>
                       <Route path="/admin/blog" element={<AdminBlog />} />
+                      <Route path="/admin/bookings" element={<AdminBookings />} />
                     </Route>
 
                     {/* Master Admin restricted route */}

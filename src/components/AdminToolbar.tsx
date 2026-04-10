@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield, BookOpen, Users } from 'lucide-react';
+import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield, BookOpen, Users, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function AdminToolbar() {
@@ -47,7 +47,7 @@ export function AdminToolbar() {
                 <div
                     className="transition-all duration-300 ease-in-out overflow-hidden"
                     style={{
-                        maxHeight: collapsed ? '0px' : '260px',
+                        maxHeight: collapsed ? '0px' : '320px',
                         opacity: collapsed ? 0 : 1,
                     }}
                 >
@@ -83,6 +83,14 @@ export function AdminToolbar() {
                             >
                                 <BookOpen className="h-4 w-4" />
                                 Manage Blog
+                            </button>
+                            <button
+                                onClick={() => navigate('/admin/bookings')}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white transition-all cursor-pointer shadow-sm"
+                                title="Manage Bookings"
+                            >
+                                <CalendarDays className="h-4 w-4" />
+                                Manage Bookings
                             </button>
                             <button
                                 onClick={switchUser}
