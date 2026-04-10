@@ -204,7 +204,7 @@ export function Home() {
                 <p className="text-primary-600">First Saturday each month, 10:30 - 12:30</p>
               </div>
               <Link
-                to="/hall"
+                to="/hall/coffee-morning"
                 className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
               >
                 Find Out More

@@ -38,7 +38,8 @@ export function Header() {
       path: "/hall",
       children: [
         { label: "The Hall", path: "/hall" },
-        { label: "Events Schedule", path: "/hall/events" }
+        { label: "Events Schedule", path: "/hall/events" },
+        { label: "Coffee Mornings", path: "/hall/coffee-morning" }
       ]
     },
     { label: "Churches", path: "/churches" },

@@ -25,6 +25,7 @@ const AdminLogin = lazy(() => import('./pages/AdminLogin').then(m => ({ default:
 const AdminBlog = lazy(() => import('./pages/AdminBlog').then(m => ({ default: m.AdminBlog })));
 const AdminUsers = lazy(() => import('./pages/AdminUsers').then(m => ({ default: m.AdminUsers })));
 const AdminBookings = lazy(() => import('./pages/AdminBookings').then(m => ({ default: m.AdminBookings })));
+const CoffeeMorning = lazy(() => import('./pages/CoffeeMorning').then(m => ({ default: m.CoffeeMorning })));
 
 /** Reverse guard: redirects to /hall/events if already logged in */
 
@@ -46,6 +47,7 @@ export default function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/hall" element={<Hall />} />
                     <Route path="/hall/events" element={<Events />} />
+                    <Route path="/hall/coffee-morning" element={<CoffeeMorning />} />
                     <Route path="/churches" element={<Churches />} />
                     <Route path="/committee" element={<Committee />} />
                     <Route path="/businesses" element={<Businesses />} />
