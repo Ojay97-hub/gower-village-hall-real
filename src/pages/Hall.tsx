@@ -125,36 +125,27 @@ export function Hall() {
       return;
     }
 
-    const web3formsKey = import.meta.env.VITE_WEB3FORMS_KEY;
-    if (!web3formsKey) {
-      setFriendsError("Form is not configured yet. Please try again later.");
-      setFriendsSubmitting(false);
-      return;
-    }
-
     try {
-      const response = await fetch("https://api.web3forms.com/submit", {
+      const response = await fetch("/api/send-newsletter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
         body: JSON.stringify({
-          access_key: web3formsKey,
-          subject: `Friends of Gower Village Hall - New Member Interest`,
-          name: friendsName.trim() || "Not provided",
+          name: friendsName.trim() || "",
           email: friendsEmail.trim(),
-          message: `${friendsName.trim() || "Someone"} would like to join Friends of Gower Village Hall.`,
+          group: "hall",
         }),
       });
 
       const data = await response.json();
-      if (data.success) {
+      if (response.ok && data.success) {
         setFriendsSubmitted(true);
         setFriendsEmail("");
         setFriendsName("");
       } else {
-        setFriendsError(data.message || "Something went wrong. Please try again.");
+        setFriendsError(data.error || "Something went wrong. Please try again.");
       }
     } catch {
       setFriendsError("Network error. Please check your connection and try again.");
@@ -219,30 +210,17 @@ export function Hall() {
       return;
     }
 
-    const web3formsKey = import.meta.env.VITE_WEB3FORMS_KEY;
-    console.log('[BookingForm] API key present:', !!web3formsKey);
-    if (!web3formsKey) {
-      setBookingStatus('error');
-      setBookingError('Form is not configured yet. Please contact us directly.');
-      setBookingSubmitting(false);
-      return;
-    }
-
     const payload = {
-      access_key: web3formsKey,
-      subject: `Hall Booking Enquiry from ${bookingForm.name.trim()}`,
       name: bookingForm.name.trim(),
       email: bookingForm.email.trim(),
-      phone: bookingForm.phone.trim() || 'Not provided',
-      start_date: bookingForm.date,
-      end_date: bookingForm.endDate || 'Not specified',
-      event_details: bookingForm.details.trim(),
+      phone: bookingForm.phone.trim() || '',
+      date: bookingForm.date,
+      endDate: bookingForm.endDate || '',
+      details: bookingForm.details.trim(),
     };
 
-    console.log('[BookingForm] Sending payload:', { ...payload, access_key: '***hidden***' });
-
     try {
-      const response = await fetch('https://api.web3forms.com/submit', {
+      const response = await fetch('/api/send-booking', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -251,21 +229,17 @@ export function Hall() {
         body: JSON.stringify(payload),
       });
 
-      console.log('[BookingForm] Response status:', response.status);
       const data = await response.json();
-      console.log('[BookingForm] Response data:', data);
 
-      if (data.success) {
-        console.log('[BookingForm] ✅ Submission successful');
+      if (response.ok && data.success) {
         setBookingStatus('success');
         setBookingForm({ name: '', email: '', phone: '', date: '', endDate: '', details: '' });
       } else {
-        console.error('[BookingForm] ❌ Submission failed:', data.message);
         setBookingStatus('error');
-        setBookingError(data.message || 'Something went wrong. Please try again.');
+        setBookingError(data.error || 'Something went wrong. Please try again.');
       }
     } catch (err) {
-      console.error('[BookingForm] ❌ Network error:', err);
+      console.error('[BookingForm] Network error:', err);
       setBookingStatus('error');
       setBookingError('Network error. Please check your connection and try again.');
     } finally {

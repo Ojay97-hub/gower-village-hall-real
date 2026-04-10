@@ -24,36 +24,27 @@ export function Churches() {
       return;
     }
 
-    const web3formsKey = import.meta.env.VITE_WEB3FORMS_KEY;
-    if (!web3formsKey) {
-      setError("Form is not configured yet. Please try again later.");
-      setSubmitting(false);
-      return;
-    }
-
     try {
-      const response = await fetch("https://api.web3forms.com/submit", {
+      const response = await fetch("/api/send-newsletter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
         body: JSON.stringify({
-          access_key: web3formsKey,
-          subject: `Friends of St. John's & St. Nicholas - New Member Interest`,
-          name: name.trim() || "Not provided",
+          name: name.trim() || "",
           email: email.trim(),
-          message: `${name.trim() || "Someone"} would like to join Friends of St. John's & St. Nicholas.`,
+          group: "churches",
         }),
       });
 
       const data = await response.json();
-      if (data.success) {
+      if (response.ok && data.success) {
         setSubmitted(true);
         setEmail("");
         setName("");
       } else {
-        setError(data.message || "Something went wrong. Please try again.");
+        setError(data.error || "Something went wrong. Please try again.");
       }
     } catch {
       setError("Network error. Please check your connection and try again.");
