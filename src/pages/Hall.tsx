@@ -683,9 +683,9 @@ export function Hall() {
                 Creative art sessions for all skill levels in a welcoming environment.
               </p>
               <div className="mt-auto">
-                <button className="text-sm font-medium text-gray-700 bg-gray-50 px-6 py-2 rounded-full hover:bg-gray-100 transition-colors p-2">
+                <Link to="/hall/events" className="text-sm font-medium text-gray-700 bg-gray-50 px-6 py-2 rounded-full hover:bg-gray-100 transition-colors p-2">
                   Check schedule
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -698,14 +698,12 @@ export function Hall() {
                 Beautiful harmonies and community singing led by Kate Davies.
               </p>
               <div className="mt-auto">
-                <a
-                  href="https://www.gowerharmony.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to="/hall/events"
                   className="text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center group/link transition-colors p-2"
                 >
                   Learn more <span className="ml-1 transform group-hover/link:translate-x-1 transition-transform">→</span>
-                </a>
+                </Link>
               </div>
             </div>
           </div>

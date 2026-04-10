@@ -34,9 +34,10 @@ export function Header() {
   const navItems = [
     { label: "Home", path: "/" },
     {
-      label: "The Hall",
+      label: "Hall",
       path: "/hall",
       children: [
+        { label: "The Hall", path: "/hall" },
         { label: "Events Schedule", path: "/hall/events" }
       ]
     },
@@ -103,7 +104,7 @@ export function Header() {
                       {activeDropdown === item.label && (
                         <div className="absolute top-full left-0 w-48 pt-2">
                           <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-2">
-                            {item.children.map((child) => (
+                            {item.children.filter(child => child.path !== item.path).map((child) => (
                               <Link
                                 key={child.path}
                                 to={child.path}

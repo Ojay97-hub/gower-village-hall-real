@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
     ? "Friends of St. John's & St. Nicholas"
     : 'Friends of Gower Village Hall';
 
-  const html = `
+  const adminHtml = `
     <h2>New Member Interest — ${displayGroup}</h2>
     <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:sans-serif;font-size:14px;">
       <tr><td style="font-weight:bold;padding-right:16px;">Name</td><td>${displayName}</td></tr>
@@ -43,14 +43,32 @@ module.exports = async (req, res) => {
     </table>
   `;
 
+  const confirmationHtml = `
+    <div style="font-family:sans-serif;font-size:15px;color:#222;max-width:560px;">
+      <h2 style="color:#6b7564;">Thank you for joining, ${displayName}!</h2>
+      <p>We've received your sign-up for <strong>${displayGroup}</strong> and someone will be in contact with you shortly.</p>
+      <p>In the meantime, keep an eye out for updates on upcoming events and community news.</p>
+      <p style="margin-top:24px;">If you have any questions, feel free to reply to this email.</p>
+      <p>Kind regards,<br><strong>Penmaen &amp; Nicholaston Village Hall</strong></p>
+    </div>
+  `;
+
   try {
-    await transporter.sendMail({
-      from: `"Gower Village Hall Website" <${fromEmail}>`,
-      to: toEmail,
-      replyTo: email,
-      subject: `${displayGroup} — New Member Interest from ${name || email}`,
-      html,
-    });
+    await Promise.all([
+      transporter.sendMail({
+        from: `"Gower Village Hall Website" <${fromEmail}>`,
+        to: toEmail,
+        replyTo: email,
+        subject: `${displayGroup} — New Member Interest from ${name || email}`,
+        html: adminHtml,
+      }),
+      transporter.sendMail({
+        from: `"Gower Village Hall Website" <${fromEmail}>`,
+        to: email,
+        subject: `Thanks for joining ${displayGroup}`,
+        html: confirmationHtml,
+      }),
+    ]);
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error('Failed to send newsletter email:', err.message);
