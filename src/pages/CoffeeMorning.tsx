@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Coffee, Clock, CalendarDays, Users, Plus, Edit2, Trash2, AlertTriangle, X } from 'lucide-react';
 import { useGallery, GalleryImage } from '../context/GalleryContext';
@@ -44,9 +44,48 @@ const defaultGalleryImages = [
   }
 ];
 
+function getNextCoffeeMorning(): Date {
+  const now = new Date();
+  // Try this month's first Saturday
+  const d = new Date(now.getFullYear(), now.getMonth(), 1);
+  d.setDate(1 + ((6 - d.getDay() + 7) % 7)); // first Saturday
+  // Set to 10:30
+  d.setHours(10, 30, 0, 0);
+  // If it's already past, go to next month
+  if (d <= now) {
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    next.setDate(1 + ((6 - next.getDay() + 7) % 7));
+    next.setHours(10, 30, 0, 0);
+    return next;
+  }
+  return d;
+}
+
+function useCountdown(target: Date) {
+  const calc = () => {
+    const diff = target.getTime() - Date.now();
+    if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return {
+      days: Math.floor(diff / 86400000),
+      hours: Math.floor((diff % 86400000) / 3600000),
+      minutes: Math.floor((diff % 3600000) / 60000),
+      seconds: Math.floor((diff % 60000) / 1000),
+    };
+  };
+  const [time, setTime] = useState(calc);
+  useEffect(() => {
+    const id = setInterval(() => setTime(calc()), 1000);
+    return () => clearInterval(id);
+  }, [target]);
+  return time;
+}
+
 export function CoffeeMorning() {
   const { galleryImages, loading: galleryLoading, deleteGalleryImage, reorderGalleryImages } = useGallery();
   const { isAdmin } = useAuth();
+
+  const nextDate = getNextCoffeeMorning();
+  const countdown = useCountdown(nextDate);
 
   const [mode, setMode] = useState<'view' | 'edit' | 'delete'>('view');
   const [showImageForm, setShowImageForm] = useState(false);
@@ -170,6 +209,30 @@ export function CoffeeMorning() {
                 and the company of neighbours old and new.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Countdown */}
+      <section className="py-10 bg-white border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <p className="text-sm font-medium text-primary-600 uppercase tracking-widest mb-1">Next coffee morning</p>
+          <p className="text-xl font-semibold text-gray-900 mb-6">
+            {nextDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            {' '}· 10:30 – 12:30
+          </p>
+          <div className="flex justify-center gap-4">
+            {[
+              { label: 'Days', value: countdown.days },
+              { label: 'Hours', value: countdown.hours },
+              { label: 'Minutes', value: countdown.minutes },
+              { label: 'Seconds', value: countdown.seconds },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-primary-50 rounded-2xl px-5 py-4 min-w-[72px]">
+                <p className="text-3xl font-bold text-gray-900 tabular-nums">{String(value).padStart(2, '0')}</p>
+                <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
