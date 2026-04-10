@@ -41,14 +41,36 @@ module.exports = async (req, res) => {
     </table>
   `;
 
+  const confirmationHtml = `
+    <div style="font-family:sans-serif;font-size:15px;color:#222;max-width:560px;">
+      <h2 style="color:#2d6a4f;">Thank you for your enquiry, ${escapeHtml(name)}!</h2>
+      <p>We've received your hall booking enquiry and will be in touch shortly to discuss availability and next steps.</p>
+      <p>Here's a summary of what you submitted:</p>
+      <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+        <tr><td style="font-weight:bold;padding-right:16px;">Date(s)</td><td>${escapeHtml(date)}${endDate ? ` – ${escapeHtml(endDate)}` : ''}</td></tr>
+        <tr><td style="font-weight:bold;padding-right:16px;vertical-align:top;">Details</td><td style="white-space:pre-wrap;">${escapeHtml(details)}</td></tr>
+      </table>
+      <p style="margin-top:24px;">If you have any questions in the meantime, feel free to reply to this email.</p>
+      <p>Kind regards,<br><strong>Penmaen &amp; Nicholaston Village Hall</strong></p>
+    </div>
+  `;
+
   try {
-    await transporter.sendMail({
-      from: `"Gower Village Hall Website" <${fromEmail}>`,
-      to: toEmail,
-      replyTo: email,
-      subject: `Hall Booking Enquiry from ${name}`,
-      html,
-    });
+    await Promise.all([
+      transporter.sendMail({
+        from: `"Penmaen & Nicholaston Village Hall" <${fromEmail}>`,
+        to: toEmail,
+        replyTo: email,
+        subject: `Hall Booking Enquiry from ${name}`,
+        html,
+      }),
+      transporter.sendMail({
+        from: `"Penmaen & Nicholaston Village Hall" <${fromEmail}>`,
+        to: email,
+        subject: `We've received your hall booking enquiry`,
+        html: confirmationHtml,
+      }),
+    ]);
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error('Failed to send booking email:', err.message);
