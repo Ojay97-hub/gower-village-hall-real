@@ -33,18 +33,13 @@ function getErrorMessage(error: Error): string {
 export function AdminLogin() {
     type LoginStep = 'select-user' | 'enter-password' | 'manual-login' | 'set-password';
 
-    // Detect invite/recovery flow from URL before Supabase clears the params.
-    // Supabase v2 PKCE flow uses ?code= query param; older implicit flow uses #type=invite hash.
-    // On the admin login page, any ?code= must be from an invite or recovery email
-    // (regular email+password logins never produce a code param).
+    // Detect invite/recovery flow. The flag is set in main.tsx before any lazy-loading
+    // happens, because by the time this component mounts Supabase may have already
+    // processed and cleared the ?code= query param from the URL.
     const [isInviteFlow] = useState(() => {
-        const hash = window.location.hash;
-        const search = window.location.search;
-        return (
-            hash.includes('type=invite') ||
-            hash.includes('type=recovery') ||
-            search.includes('code=')
-        );
+        const flag = sessionStorage.getItem('supabase_invite_flow') === '1';
+        if (flag) sessionStorage.removeItem('supabase_invite_flow'); // consume it
+        return flag;
     });
 
     const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
