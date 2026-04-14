@@ -1,6 +1,131 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Users, Search, Loader2, AlertTriangle, X } from "lucide-react";
+import { Plus, Trash2, Users, Search, Loader2, AlertTriangle, X, Pencil, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { ADMIN_ROLES, ROLE_COLORS } from "../lib/adminRoles";
+
+// ─── Role badge ──────────────────────────────────────────────────────────────
+
+function RoleBadge({ roleId }: { roleId: string }) {
+    const role = ADMIN_ROLES.find(r => r.id === roleId);
+    if (!role) return null;
+    const colors = ROLE_COLORS[role.color] ?? ROLE_COLORS['blue'];
+    return (
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${colors.badge}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
+            {role.label}
+        </span>
+    );
+}
+
+// ─── Edit Roles Modal ─────────────────────────────────────────────────────────
+
+function EditRolesModal({
+    target,
+    isMasterAdminTarget,
+    isSaving,
+    onSave,
+    onCancel,
+}: {
+    target: { id: string; email: string; name: string; roles: string[] };
+    isMasterAdminTarget: boolean;
+    isSaving: boolean;
+    onSave: (roles: string[]) => void;
+    onCancel: () => void;
+}) {
+    const [selected, setSelected] = useState<string[]>(target.roles);
+
+    const toggle = (roleId: string) => {
+        setSelected(prev =>
+            prev.includes(roleId) ? prev.filter(r => r !== roleId) : [...prev, roleId]
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={!isSaving ? onCancel : undefined}
+            />
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
+                <button
+                    onClick={onCancel}
+                    disabled={isSaving}
+                    className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
+                <div>
+                    <h2 className="text-base font-bold text-gray-900">Edit Roles</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">{target.name || target.email}</p>
+                </div>
+
+                {isMasterAdminTarget ? (
+                    <div className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-xl text-sm text-purple-700">
+                        <ShieldCheck className="w-5 h-5 flex-shrink-0" />
+                        This user is a Master Admin and has full access to all sections regardless of role assignments.
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {ADMIN_ROLES.map(role => {
+                            const checked = selected.includes(role.id);
+                            const colors = ROLE_COLORS[role.color] ?? ROLE_COLORS['blue'];
+                            return (
+                                <label
+                                    key={role.id}
+                                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                        checked
+                                            ? `${colors.badge} border-current`
+                                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => toggle(role.id)}
+                                        className="mt-0.5 rounded"
+                                    />
+                                    <div>
+                                        <div className="font-medium text-sm">{role.label}</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">{role.description}</div>
+                                    </div>
+                                </label>
+                            );
+                        })}
+                    </div>
+                )}
+
+                <div className="flex gap-3 justify-end mt-2">
+                    <button
+                        onClick={onCancel}
+                        disabled={isSaving}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-40"
+                    >
+                        Cancel
+                    </button>
+                    {!isMasterAdminTarget && (
+                        <button
+                            onClick={() => onSave(selected)}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-60"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save Roles'
+                            )}
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Confirm Remove Modal ────────────────────────────────────────────────────
 
 function ConfirmRemoveModal({
     email,
@@ -15,12 +140,10 @@ function ConfirmRemoveModal({
 }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                 onClick={!isRemoving ? onCancel : undefined}
             />
-            {/* Dialog */}
             <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
                 <button
                     onClick={onCancel}
@@ -65,7 +188,7 @@ function ConfirmRemoveModal({
                                 Removing...
                             </>
                         ) : (
-                            "Revoke Access"
+                            'Revoke Access'
                         )}
                     </button>
                 </div>
@@ -74,15 +197,30 @@ function ConfirmRemoveModal({
     );
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export function AdminUsers() {
-    const { adminUsersList, fetchAdminUsers, inviteAdminUser, removeAdminUser, user } = useAuth();
+    const {
+        adminUsersList,
+        fetchAdminUsers,
+        inviteAdminUser,
+        removeAdminUser,
+        updateAdminUserRoles,
+        isMasterAdminEmail,
+        user,
+    } = useAuth();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [inviteEmail, setInviteEmail] = useState("");
     const [isInviting, setIsInviting] = useState(false);
     const [inviteError, setInviteError] = useState<string | null>(null);
     const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+
     const [confirmRemove, setConfirmRemove] = useState<{ id: string; email: string } | null>(null);
     const [isRemoving, setIsRemoving] = useState(false);
+
+    const [editRoles, setEditRoles] = useState<{ id: string; email: string; name: string; roles: string[] } | null>(null);
+    const [isSavingRoles, setIsSavingRoles] = useState(false);
 
     useEffect(() => {
         fetchAdminUsers();
@@ -90,7 +228,8 @@ export function AdminUsers() {
     }, []);
 
     const filteredUsers = adminUsersList.filter(u =>
-        u.email.toLowerCase().includes(searchQuery.toLowerCase())
+        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const handleInvite = async (e: React.FormEvent) => {
@@ -119,10 +258,17 @@ export function AdminUsers() {
         setIsRemoving(true);
         const { error } = await removeAdminUser(confirmRemove.id);
         setIsRemoving(false);
-        if (error) {
-            alert(error.message || 'Failed to remove user.');
-        }
+        if (error) alert(error.message || 'Failed to remove user.');
         setConfirmRemove(null);
+    };
+
+    const handleSaveRoles = async (roles: string[]) => {
+        if (!editRoles) return;
+        setIsSavingRoles(true);
+        const { error } = await updateAdminUserRoles(editRoles.id, roles);
+        setIsSavingRoles(false);
+        if (error) alert(error.message || 'Failed to update roles.');
+        setEditRoles(null);
     };
 
     return (
@@ -135,16 +281,24 @@ export function AdminUsers() {
                     onCancel={() => !isRemoving && setConfirmRemove(null)}
                 />
             )}
+            {editRoles && (
+                <EditRolesModal
+                    target={editRoles}
+                    isMasterAdminTarget={isMasterAdminEmail(editRoles.email)}
+                    isSaving={isSavingRoles}
+                    onSave={handleSaveRoles}
+                    onCancel={() => !isSavingRoles && setEditRoles(null)}
+                />
+            )}
 
             <div className="p-4 sm:p-8 max-w-5xl mx-auto">
-                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold font-serif text-gray-900 mb-2 flex items-center gap-3">
                             <Users className="w-8 h-8 text-primary-600" />
                             Admin Users
                         </h1>
-                        <p className="text-gray-500">Manage administrator access to the hall dashboard.</p>
+                        <p className="text-gray-500">Manage administrator access and permissions.</p>
                     </div>
                 </div>
 
@@ -152,7 +306,6 @@ export function AdminUsers() {
 
                     {/* Main List */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Controls */}
                         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4">
                             <div className="flex-1 relative">
                                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -166,13 +319,13 @@ export function AdminUsers() {
                             </div>
                         </div>
 
-                        {/* Users List */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-gray-50/50 border-b border-gray-100 text-sm font-medium text-gray-500">
                                             <th className="p-4 pl-6 font-medium">Administrator</th>
+                                            <th className="p-4 font-medium">Roles</th>
                                             <th className="p-4 font-medium">Granted On</th>
                                             <th className="p-4 pr-6 font-medium text-right">Actions</th>
                                         </tr>
@@ -180,52 +333,80 @@ export function AdminUsers() {
                                     <tbody className="divide-y divide-gray-100">
                                         {filteredUsers.length === 0 ? (
                                             <tr>
-                                                <td colSpan={3} className="p-8 text-center text-gray-500">
+                                                <td colSpan={4} className="p-8 text-center text-gray-500">
                                                     No users found.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredUsers.map(u => (
-                                                <tr key={u.id} className="hover:bg-gray-50/50 transition-colors group">
-                                                    <td className="p-4 pl-6">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold">
-                                                                {(u.name || u.email).charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <div>
-                                                                <div className="font-medium text-gray-900 flex items-center gap-2">
-                                                                    {u.name || u.email}
-                                                                    {u.id === user?.id && (
-                                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] uppercase font-bold tracking-wider">
-                                                                            You
-                                                                        </span>
+                                            filteredUsers.map(u => {
+                                                const isMaster = isMasterAdminEmail(u.email);
+                                                return (
+                                                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                                                        <td className="p-4 pl-6">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold flex-shrink-0">
+                                                                    {(u.name || u.email).charAt(0).toUpperCase()}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                                                                        {u.name || u.email}
+                                                                        {u.id === user?.id && (
+                                                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] uppercase font-bold tracking-wider">
+                                                                                You
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {u.name && (
+                                                                        <div className="text-sm text-gray-500">{u.email}</div>
                                                                     )}
                                                                 </div>
-                                                                {u.name && (
-                                                                    <div className="text-sm text-gray-500">{u.email}</div>
-                                                                )}
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4 text-sm text-gray-500">
-                                                        {new Date(u.created_at).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="p-4 pr-6 text-right">
-                                                        <button
-                                                            onClick={() => setConfirmRemove({ id: u.id, email: u.email })}
-                                                            disabled={u.id === user?.id}
-                                                            className={`p-2 rounded-lg transition-colors ${
-                                                                u.id === user?.id
-                                                                    ? 'text-gray-300 cursor-not-allowed'
-                                                                    : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                                                            }`}
-                                                            title={u.id === user?.id ? "Cannot remove yourself" : "Revoke Access"}
-                                                        >
-                                                            <Trash2 className="w-5 h-5" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                                        </td>
+                                                        <td className="p-4">
+                                                            {isMaster ? (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-50 text-purple-700 border-purple-100">
+                                                                    <ShieldCheck className="w-3 h-3" />
+                                                                    Master Admin
+                                                                </span>
+                                                            ) : u.roles.length > 0 ? (
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {u.roles.map(r => (
+                                                                        <RoleBadge key={r} roleId={r} />
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400 italic">No roles assigned</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
+                                                            {new Date(u.created_at).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="p-4 pr-6 text-right">
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <button
+                                                                    onClick={() => setEditRoles({ id: u.id, email: u.email, name: u.name, roles: u.roles })}
+                                                                    className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                                                    title="Edit Roles"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setConfirmRemove({ id: u.id, email: u.email })}
+                                                                    disabled={u.id === user?.id}
+                                                                    className={`p-2 rounded-lg transition-colors ${
+                                                                        u.id === user?.id
+                                                                            ? 'text-gray-300 cursor-not-allowed'
+                                                                            : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                                                                    }`}
+                                                                    title={u.id === user?.id ? "Cannot remove yourself" : "Revoke Access"}
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         )}
                                     </tbody>
                                 </table>
@@ -233,12 +414,13 @@ export function AdminUsers() {
                         </div>
                     </div>
 
-                    {/* Sidebar / Invite Form */}
+                    {/* Sidebar */}
                     <div className="space-y-6">
+                        {/* Invite Form */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-900 mb-4">Invite Administrator</h2>
-                            <p className="text-sm text-gray-500 mb-6">
-                                Send an invitation email to grant a new user administrative access.
+                            <h2 className="text-lg font-bold text-gray-900 mb-1">Invite Administrator</h2>
+                            <p className="text-sm text-gray-500 mb-5">
+                                Send an invitation email to grant a new user administrative access. Assign their roles after they join.
                             </p>
 
                             <form onSubmit={handleInvite} className="space-y-4">
@@ -286,6 +468,25 @@ export function AdminUsers() {
                                     )}
                                 </button>
                             </form>
+                        </div>
+
+                        {/* Roles Reference */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-sm font-bold text-gray-900 mb-3">Available Roles</h2>
+                            <div className="space-y-3">
+                                {ADMIN_ROLES.map(role => {
+                                    const colors = ROLE_COLORS[role.color] ?? ROLE_COLORS['blue'];
+                                    return (
+                                        <div key={role.id} className="flex items-start gap-2">
+                                            <span className={`mt-1 inline-block w-2 h-2 rounded-full flex-shrink-0 ${colors.dot}`} />
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-800">{role.label}</div>
+                                                <div className="text-xs text-gray-500">{role.description}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 
