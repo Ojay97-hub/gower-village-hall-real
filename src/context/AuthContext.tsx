@@ -14,7 +14,7 @@ type AuthContextType = {
     userEmail: string | null;
     adminUsersList: { id: string; email: string; name: string; created_at: string }[];
     fetchAdminUsers: () => Promise<void>;
-    inviteAdminUser: (email: string) => Promise<{ error: Error | null }>;
+    inviteAdminUser: (email: string) => Promise<{ error: Error | null; existingUser?: boolean }>;
     removeAdminUser: (id: string) => Promise<{ error: Error | null }>;
     signIn: (email: string, password: string) => Promise<{ error: Error | null; isAdmin: boolean }>;
     signOut: () => Promise<void>;
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const inviteAdminUser = async (email: string) => {
+    const inviteAdminUser = async (email: string): Promise<{ error: Error | null; existingUser?: boolean }> => {
         if (!checkIsMasterAdmin(user?.email)) return { error: new Error('Unauthorized') };
 
         try {
@@ -138,6 +138,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 redirectTo: 'https://gower-village-hall-real.vercel.app/admin/login'
             });
             if (error) return { error };
+
+            // If email_confirmed_at is already set, this is an existing confirmed user —
+            // Supabase silently skips sending an invite email in this case.
+            const existingUser = !!(data.user?.email_confirmed_at);
 
             if (data.user) {
                 // Add to admin_users allowlist — use service role to bypass RLS
@@ -149,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             await fetchAdminUsers();
-            return { error: null };
+            return { error: null, existingUser };
         } catch (error: any) {
             return { error };
         }

@@ -27,13 +27,16 @@ export function AdminUsers() {
         if (!inviteEmail) return;
 
         setIsInviting(true);
-        const { error } = await inviteAdminUser(inviteEmail);
+        const { error, existingUser } = await inviteAdminUser(inviteEmail);
         setIsInviting(false);
 
         if (error) {
             setInviteError(error.message || 'Failed to invite user.');
+        } else if (existingUser) {
+            setInviteSuccess(`${inviteEmail} already has an account and has been granted admin access. They can log in directly.`);
+            setInviteEmail("");
         } else {
-            setInviteSuccess(`Successfully invited ${inviteEmail}`);
+            setInviteSuccess(`Invitation email sent to ${inviteEmail}. They'll receive a link to set up their password.`);
             setInviteEmail("");
         }
     };
