@@ -237,8 +237,8 @@ export function Hall() {
                 </div>
                 <h3 className="mb-3">Opening Hours</h3>
                 <p className="text-gray-600 text-sm">
-                  Available for hire 7 days a week,<br />
-                  9am - 11pm
+                  Available for hire 7 days a week.<br />
+                  Sessions can be broken into morning / afternoon / evening.
                 </p>
               </div>
 
@@ -249,8 +249,8 @@ export function Hall() {
                 </div>
                 <h3 className="mb-3">Hire Rates</h3>
                 <p className="text-gray-600 text-sm">
-                  £15/hour or £100/day. Discounts<br />
-                  for regular bookings.
+                  £40 a session + electricity<br />
+                  or £120 a day.
                 </p>
               </div>
 
@@ -261,20 +261,19 @@ export function Hall() {
                 </div>
                 <h3 className="mb-3">Parking</h3>
                 <p className="text-gray-600 text-sm">
-                  Free parking available for up to 20<br />
-                  vehicles
+                  £10 parking fee for field council.<br />
+                  Parking for up to 20 vehicles.
                 </p>
               </div>
 
               {/* Capacity Card */}
               <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex-grow">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-2xl text-gray-700 font-semibold">50</span>
+                  <span className="text-2xl text-gray-700 font-semibold">80</span>
                 </div>
                 <h3 className="mb-3">Capacity</h3>
                 <p className="text-gray-600 text-sm">
-                  Up to 50 people seated, 75<br />
-                  standing
+                  Max capacity: 80
                 </p>
               </div>
             </div>
