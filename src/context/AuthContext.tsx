@@ -168,7 +168,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Remove from allowlist — use service role to bypass RLS
             const { error: dbError } = await supabaseAdmin.from('admin_users').delete().eq('user_id', id);
             if (dbError) return { error: dbError };
-            
+
+            // Delete the auth user entirely — Supabase Auth is only used for admin
+            // login on this site, so revoking access means full account removal
+            const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+            if (authError) return { error: authError };
+
             await fetchAdminUsers();
             return { error: null };
         } catch (error: any) {
