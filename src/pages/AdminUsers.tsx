@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Users, Search, Loader2, AlertTriangle, X, Pencil, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, Users, Search, Loader2, AlertTriangle, X, Pencil, ShieldCheck, ShieldPlus, ShieldMinus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ADMIN_ROLES, ROLE_COLORS } from "../lib/adminRoles";
 
@@ -197,6 +197,85 @@ function ConfirmRemoveModal({
     );
 }
 
+// ─── Generic Confirm Action Modal ────────────────────────────────────────────
+
+function ConfirmActionModal({
+    title,
+    icon,
+    iconBg,
+    message,
+    confirmLabel,
+    confirmClass,
+    isLoading,
+    loadingLabel,
+    onConfirm,
+    onCancel,
+}: {
+    title: string;
+    icon: React.ReactNode;
+    iconBg: string;
+    message: React.ReactNode;
+    confirmLabel: string;
+    confirmClass: string;
+    isLoading: boolean;
+    loadingLabel: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+}) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={!isLoading ? onCancel : undefined}
+            />
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
+                <button
+                    onClick={onCancel}
+                    disabled={isLoading}
+                    className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-3">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full ${iconBg} flex items-center justify-center`}>
+                        {icon}
+                    </div>
+                    <div>
+                        <h2 className="text-base font-bold text-gray-900">{title}</h2>
+                    </div>
+                </div>
+
+                <p className="text-sm text-gray-600">{message}</p>
+
+                <div className="flex gap-3 justify-end mt-2">
+                    <button
+                        onClick={onCancel}
+                        disabled={isLoading}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-40"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={isLoading}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-xl transition-colors disabled:opacity-60 ${confirmClass}`}
+                    >
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                {loadingLabel}
+                            </>
+                        ) : (
+                            confirmLabel
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function AdminUsers() {
@@ -206,6 +285,8 @@ export function AdminUsers() {
         inviteAdminUser,
         removeAdminUser,
         updateAdminUserRoles,
+        promoteMasterAdmin,
+        demoteMasterAdmin,
         isMasterAdminEmail,
         user,
     } = useAuth();
@@ -222,6 +303,11 @@ export function AdminUsers() {
     const [editRoles, setEditRoles] = useState<{ id: string; email: string; name: string; roles: string[] } | null>(null);
     const [isSavingRoles, setIsSavingRoles] = useState(false);
 
+    const [confirmPromote, setConfirmPromote] = useState<{ id: string; email: string; name: string } | null>(null);
+    const [isPromoting, setIsPromoting] = useState(false);
+    const [confirmDemote, setConfirmDemote] = useState<{ id: string; email: string; name: string } | null>(null);
+    const [isDemoting, setIsDemoting] = useState(false);
+
     useEffect(() => {
         fetchAdminUsers();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,6 +317,24 @@ export function AdminUsers() {
         u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const handleConfirmPromote = async () => {
+        if (!confirmPromote) return;
+        setIsPromoting(true);
+        const { error } = await promoteMasterAdmin(confirmPromote.id);
+        setIsPromoting(false);
+        if (error) alert(error.message || 'Failed to promote user.');
+        setConfirmPromote(null);
+    };
+
+    const handleConfirmDemote = async () => {
+        if (!confirmDemote) return;
+        setIsDemoting(true);
+        const { error } = await demoteMasterAdmin(confirmDemote.id);
+        setIsDemoting(false);
+        if (error) alert(error.message || 'Failed to demote user.');
+        setConfirmDemote(null);
+    };
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -290,6 +394,42 @@ export function AdminUsers() {
                     onCancel={() => !isSavingRoles && setEditRoles(null)}
                 />
             )}
+            {confirmPromote && (
+                <ConfirmActionModal
+                    title="Promote to Master Admin"
+                    icon={<ShieldPlus className="w-5 h-5 text-purple-600" />}
+                    iconBg="bg-purple-100"
+                    message={
+                        <>
+                            Grant <span className="font-semibold text-gray-900">{confirmPromote.name || confirmPromote.email}</span> full Master Admin access? They will be able to manage all administrators and sections.
+                        </>
+                    }
+                    confirmLabel="Promote"
+                    confirmClass="bg-purple-600 hover:bg-purple-700"
+                    isLoading={isPromoting}
+                    loadingLabel="Promoting..."
+                    onConfirm={handleConfirmPromote}
+                    onCancel={() => !isPromoting && setConfirmPromote(null)}
+                />
+            )}
+            {confirmDemote && (
+                <ConfirmActionModal
+                    title="Remove Master Admin"
+                    icon={<ShieldMinus className="w-5 h-5 text-amber-600" />}
+                    iconBg="bg-amber-100"
+                    message={
+                        <>
+                            Remove Master Admin access from <span className="font-semibold text-gray-900">{confirmDemote.name || confirmDemote.email}</span>? They will revert to a regular administrator with their existing roles.
+                        </>
+                    }
+                    confirmLabel="Remove Master Admin"
+                    confirmClass="bg-amber-600 hover:bg-amber-700"
+                    isLoading={isDemoting}
+                    loadingLabel="Removing..."
+                    onConfirm={handleConfirmDemote}
+                    onCancel={() => !isDemoting && setConfirmDemote(null)}
+                />
+            )}
 
             <div className="p-4 sm:p-8 max-w-5xl mx-auto">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -319,99 +459,194 @@ export function AdminUsers() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-50/50 border-b border-gray-100 text-sm font-medium text-gray-500">
-                                            <th className="p-4 pl-6 font-medium">Administrator</th>
-                                            <th className="p-4 font-medium">Roles</th>
-                                            <th className="p-4 font-medium">Granted On</th>
-                                            <th className="p-4 pr-6 font-medium text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {filteredUsers.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={4} className="p-8 text-center text-gray-500">
-                                                    No users found.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            filteredUsers.map(u => {
-                                                const isMaster = isMasterAdminEmail(u.email);
-                                                return (
-                                                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
-                                                        <td className="p-4 pl-6">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold flex-shrink-0">
-                                                                    {(u.name || u.email).charAt(0).toUpperCase()}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="font-medium text-gray-900 flex items-center gap-2 flex-wrap">
-                                                                        {u.name || u.email}
-                                                                        {u.id === user?.id && (
-                                                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] uppercase font-bold tracking-wider">
-                                                                                You
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    {u.name && (
-                                                                        <div className="text-sm text-gray-500">{u.email}</div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {isMaster ? (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-50 text-purple-700 border-purple-100">
-                                                                    <ShieldCheck className="w-3 h-3" />
-                                                                    Master Admin
-                                                                </span>
-                                                            ) : u.roles.length > 0 ? (
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {u.roles.map(r => (
-                                                                        <RoleBadge key={r} roleId={r} />
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-xs text-gray-400 italic">No roles assigned</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
-                                                            {new Date(u.created_at).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="p-4 pr-6 text-right">
-                                                            <div className="flex items-center justify-end gap-1">
-                                                                <button
-                                                                    onClick={() => setEditRoles({ id: u.id, email: u.email, name: u.name, roles: u.roles })}
-                                                                    className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                                                                    title="Edit Roles"
-                                                                >
-                                                                    <Pencil className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setConfirmRemove({ id: u.id, email: u.email })}
-                                                                    disabled={u.id === user?.id}
-                                                                    className={`p-2 rounded-lg transition-colors ${
-                                                                        u.id === user?.id
-                                                                            ? 'text-gray-300 cursor-not-allowed'
-                                                                            : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                                                                    }`}
-                                                                    title={u.id === user?.id ? "Cannot remove yourself" : "Revoke Access"}
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        </td>
+                        {/* Master Admins Table */}
+                        {(() => {
+                            const masterAdmins = filteredUsers.filter(u => u.is_master_admin || isMasterAdminEmail(u.email));
+                            if (masterAdmins.length === 0) return null;
+                            return (
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2 px-1">
+                                        <ShieldCheck className="w-4 h-4 text-purple-600" />
+                                        <h2 className="text-sm font-semibold text-purple-700 uppercase tracking-wider">Master Admins</h2>
+                                    </div>
+                                    <div className="bg-white rounded-2xl shadow-sm border border-purple-100 overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr className="bg-purple-50/60 border-b border-purple-100 text-sm font-medium text-purple-500">
+                                                        <th className="p-4 pl-6 font-medium">Administrator</th>
+                                                        <th className="p-4 font-medium">Granted On</th>
+                                                        <th className="p-4 pr-6 font-medium text-right">Actions</th>
                                                     </tr>
-                                                );
-                                            })
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                                                </thead>
+                                                <tbody className="divide-y divide-purple-50">
+                                                    {masterAdmins.map(u => {
+                                                        const isHardcoded = isMasterAdminEmail(u.email);
+                                                        return (
+                                                            <tr key={u.id} className="hover:bg-purple-50/40 transition-colors">
+                                                                <td className="p-4 pl-6">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold flex-shrink-0">
+                                                                            {(u.name || u.email).charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                                                                                {u.name || u.email}
+                                                                                {u.id === user?.id && (
+                                                                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded text-[10px] uppercase font-bold tracking-wider">
+                                                                                        You
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            {u.name && (
+                                                                                <div className="text-sm text-gray-500">{u.email}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
+                                                                    {new Date(u.created_at).toLocaleDateString()}
+                                                                </td>
+                                                                <td className="p-4 pr-6 text-right">
+                                                                    <div className="flex items-center justify-end gap-1">
+                                                                        {!isHardcoded && u.id !== user?.id && (
+                                                                            <button
+                                                                                onClick={() => setConfirmDemote({ id: u.id, email: u.email, name: u.name })}
+                                                                                className="p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                                                                                title="Remove Master Admin"
+                                                                            >
+                                                                                <ShieldMinus className="w-4 h-4" />
+                                                                            </button>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={() => setConfirmRemove({ id: u.id, email: u.email })}
+                                                                            disabled={u.id === user?.id}
+                                                                            className={`p-2 rounded-lg transition-colors ${
+                                                                                u.id === user?.id
+                                                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                                                    : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                                                                            }`}
+                                                                            title={u.id === user?.id ? "Cannot remove yourself" : "Revoke Access"}
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Regular Admins Table */}
+                        {(() => {
+                            const regularAdmins = filteredUsers.filter(u => !u.is_master_admin && !isMasterAdminEmail(u.email));
+                            return (
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2 px-1">
+                                        <Users className="w-4 h-4 text-gray-500" />
+                                        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Administrators</h2>
+                                    </div>
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr className="bg-gray-50/50 border-b border-gray-100 text-sm font-medium text-gray-500">
+                                                        <th className="p-4 pl-6 font-medium">Administrator</th>
+                                                        <th className="p-4 font-medium">Roles</th>
+                                                        <th className="p-4 font-medium">Granted On</th>
+                                                        <th className="p-4 pr-6 font-medium text-right">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {regularAdmins.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={4} className="p-8 text-center text-gray-400 text-sm">
+                                                                {searchQuery ? 'No matching administrators found.' : 'No administrators yet.'}
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        regularAdmins.map(u => (
+                                                            <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                                                                <td className="p-4 pl-6">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold flex-shrink-0">
+                                                                            {(u.name || u.email).charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                                                                                {u.name || u.email}
+                                                                                {u.id === user?.id && (
+                                                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] uppercase font-bold tracking-wider">
+                                                                                        You
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            {u.name && (
+                                                                                <div className="text-sm text-gray-500">{u.email}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-4">
+                                                                    {u.roles.length > 0 ? (
+                                                                        <div className="flex flex-wrap gap-1">
+                                                                            {u.roles.map(r => (
+                                                                                <RoleBadge key={r} roleId={r} />
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-xs text-gray-400 italic">No roles assigned</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
+                                                                    {new Date(u.created_at).toLocaleDateString()}
+                                                                </td>
+                                                                <td className="p-4 pr-6 text-right">
+                                                                    <div className="flex items-center justify-end gap-1">
+                                                                        <button
+                                                                            onClick={() => setConfirmPromote({ id: u.id, email: u.email, name: u.name })}
+                                                                            className="p-2 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                                                            title="Promote to Master Admin"
+                                                                        >
+                                                                            <ShieldPlus className="w-4 h-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setEditRoles({ id: u.id, email: u.email, name: u.name, roles: u.roles })}
+                                                                            className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                                                                            title="Edit Roles"
+                                                                        >
+                                                                            <Pencil className="w-4 h-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setConfirmRemove({ id: u.id, email: u.email })}
+                                                                            disabled={u.id === user?.id}
+                                                                            className={`p-2 rounded-lg transition-colors ${
+                                                                                u.id === user?.id
+                                                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                                                    : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                                                                            }`}
+                                                                            title={u.id === user?.id ? "Cannot remove yourself" : "Revoke Access"}
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* Sidebar */}

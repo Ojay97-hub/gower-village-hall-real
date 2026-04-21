@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 import { User, Session } from '@supabase/supabase-js';
 
-type AdminUser = { id: string; email: string; name: string; created_at: string; roles: string[] };
+type AdminUser = { id: string; email: string; name: string; created_at: string; roles: string[]; is_master_admin: boolean };
 
 type AuthContextType = {
     user: User | null;
@@ -22,6 +22,8 @@ type AuthContextType = {
     inviteAdminUser: (email: string) => Promise<{ error: Error | null; existingUser?: boolean }>;
     removeAdminUser: (id: string) => Promise<{ error: Error | null }>;
     updateAdminUserRoles: (userId: string, roles: string[]) => Promise<{ error: Error | null }>;
+    promoteMasterAdmin: (userId: string) => Promise<{ error: Error | null }>;
+    demoteMasterAdmin: (userId: string) => Promise<{ error: Error | null }>;
     signIn: (email: string, password: string) => Promise<{ error: Error | null; isAdmin: boolean }>;
     signOut: () => Promise<void>;
     adminLogout: () => Promise<void>;
@@ -31,18 +33,18 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /** Fetch admin status + assigned roles for the current user */
-async function fetchAdminRecord(userId: string): Promise<{ isAdmin: boolean; roles: string[] }> {
+async function fetchAdminRecord(userId: string): Promise<{ isAdmin: boolean; roles: string[]; isMasterAdmin: boolean }> {
     const { data, error } = await supabase
         .from('admin_users')
-        .select('user_id, roles')
+        .select('user_id, roles, is_master_admin')
         .eq('user_id', userId)
         .maybeSingle();
 
     if (error) {
         console.error('Error checking admin status:', error);
-        return { isAdmin: false, roles: [] };
+        return { isAdmin: false, roles: [], isMasterAdmin: false };
     }
-    return { isAdmin: !!data, roles: data?.roles ?? [] };
+    return { isAdmin: !!data, roles: data?.roles ?? [], isMasterAdmin: data?.is_master_admin ?? false };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -76,11 +78,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
             setIsLoading(true);
-            const { isAdmin: admin, roles } = await fetchAdminRecord(user.id);
+            const { isAdmin: admin, roles, isMasterAdmin: dbMasterAdmin } = await fetchAdminRecord(user.id);
             if (!cancelled) {
                 setIsAdmin(admin);
                 setAdminRoles(roles);
-                setIsMasterAdmin(isMasterAdminEmail(user.email));
+                setIsMasterAdmin(isMasterAdminEmail(user.email) || dbMasterAdmin);
                 setIsLoading(false);
             }
         }
@@ -108,12 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     /** True if the current user can access a given role-gated section.
      *  Master admins bypass all role checks. */
     const hasRole = (role: string): boolean => {
-        if (isMasterAdminEmail(user?.email)) return true;
+        if (isMasterAdmin) return true;
         return adminRoles.includes(role);
     };
 
     const fetchAdminUsers = async () => {
-        if (!isMasterAdminEmail(user?.email)) return;
+        if (!isMasterAdmin) return;
 
         try {
             const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
@@ -135,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         name: u.user_metadata?.name || u.user_metadata?.full_name || '',
                         created_at: rec?.created_at || u.created_at,
                         roles: rec?.roles ?? [],
+                        is_master_admin: rec?.is_master_admin ?? false,
                     };
                 });
 
@@ -145,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const inviteAdminUser = async (email: string): Promise<{ error: Error | null; existingUser?: boolean }> => {
-        if (!isMasterAdminEmail(user?.email)) return { error: new Error('Unauthorized') };
+        if (!isMasterAdmin) return { error: new Error('Unauthorized') };
 
         try {
             const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
@@ -174,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const removeAdminUser = async (id: string) => {
-        if (!isMasterAdminEmail(user?.email)) return { error: new Error('Unauthorized') };
+        if (!isMasterAdmin) return { error: new Error('Unauthorized') };
 
         try {
             if (id === user?.id) return { error: new Error('Cannot remove yourself.') };
@@ -199,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const updateAdminUserRoles = async (userId: string, roles: string[]) => {
-        if (!isMasterAdminEmail(user?.email)) return { error: new Error('Unauthorized') };
+        if (!isMasterAdmin) return { error: new Error('Unauthorized') };
 
         try {
             const { error } = await supabaseAdmin
@@ -208,6 +211,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .eq('user_id', userId);
             if (error) return { error };
 
+            await fetchAdminUsers();
+            return { error: null };
+        } catch (error: any) {
+            return { error };
+        }
+    };
+
+    const promoteMasterAdmin = async (userId: string) => {
+        if (!isMasterAdmin) return { error: new Error('Unauthorized') };
+        try {
+            const { error } = await supabaseAdmin
+                .from('admin_users')
+                .update({ is_master_admin: true })
+                .eq('user_id', userId);
+            if (error) return { error };
+            await fetchAdminUsers();
+            return { error: null };
+        } catch (error: any) {
+            return { error };
+        }
+    };
+
+    const demoteMasterAdmin = async (userId: string) => {
+        if (!isMasterAdmin) return { error: new Error('Unauthorized') };
+        try {
+            const { error } = await supabaseAdmin
+                .from('admin_users')
+                .update({ is_master_admin: false })
+                .eq('user_id', userId);
+            if (error) return { error };
             await fetchAdminUsers();
             return { error: null };
         } catch (error: any) {
@@ -275,6 +308,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 inviteAdminUser,
                 removeAdminUser,
                 updateAdminUserRoles,
+                promoteMasterAdmin,
+                demoteMasterAdmin,
                 signIn,
                 signOut,
                 adminLogout,
