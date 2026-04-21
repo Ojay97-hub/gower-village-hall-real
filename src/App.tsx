@@ -11,6 +11,7 @@ import { AuthProvider } from './context/AuthContext';
 import { EventProvider } from './context/EventContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { BlogProvider } from './context/BlogContext';
+import { CommitteeProvider } from './context/CommitteeContext';
 
 const Home = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
 const Hall = lazy(() => import('./pages/Hall').then(m => ({ default: m.Hall })));
@@ -25,6 +26,7 @@ const AdminLogin = lazy(() => import('./pages/AdminLogin').then(m => ({ default:
 const AdminBlog = lazy(() => import('./pages/AdminBlog').then(m => ({ default: m.AdminBlog })));
 const AdminUsers = lazy(() => import('./pages/AdminUsers').then(m => ({ default: m.AdminUsers })));
 const AdminBookings = lazy(() => import('./pages/AdminBookings').then(m => ({ default: m.AdminBookings })));
+const AdminCommittee = lazy(() => import('./pages/AdminCommittee').then(m => ({ default: m.AdminCommittee })));
 const CoffeeMorning = lazy(() => import('./pages/CoffeeMorning').then(m => ({ default: m.CoffeeMorning })));
 const ForFamilies = lazy(() => import('./pages/ForFamilies').then(m => ({ default: m.ForFamilies })));
 
@@ -38,6 +40,7 @@ export default function App() {
         <EventProvider>
           <GalleryProvider>
             <BlogProvider>
+            <CommitteeProvider>
               <ScrollToTop />
               <CanonicalUrl />
               <div className="flex flex-col min-h-screen">
@@ -68,6 +71,9 @@ export default function App() {
                     <Route element={<AdminRoute requiredRole="bookings" />}>
                       <Route path="/admin/bookings" element={<AdminBookings />} />
                     </Route>
+                    <Route element={<AdminRoute requiredRole="committee" />}>
+                      <Route path="/admin/committee" element={<AdminCommittee />} />
+                    </Route>
 
                     {/* Master Admin restricted route */}
                     <Route element={<MasterAdminRoute />}>
@@ -79,6 +85,7 @@ export default function App() {
                 <Footer />
                 <AdminToolbar />
               </div>
+            </CommitteeProvider>
             </BlogProvider>
           </GalleryProvider>
         </EventProvider>

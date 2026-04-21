@@ -81,7 +81,7 @@ export function Churches() {
             </p>
             <button
               onClick={() => setShowModal(true)}
-              className="inline-flex items-center gap-3 font-medium rounded-full transition-all duration-300 transform hover:scale-105 active:scale-95 bg-white text-gray-900 hover:bg-gray-50 px-8 py-3 text-lg shadow-lg"
+              className="inline-flex items-center gap-3 font-medium rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95 bg-white text-gray-900 hover:bg-gray-50 px-8 py-3 text-lg shadow-lg"
             >
               <Users className="w-5 h-5 text-primary-600" />
               Join Friends
@@ -240,7 +240,7 @@ export function Churches() {
               <div className="mt-10">
                 <button
                   onClick={() => setShowModal(true)}
-                  className="inline-flex items-center gap-3 font-medium rounded-full transition-all duration-300 transform hover:scale-105 active:scale-95 active:shadow-inner hover:shadow-lg bg-primary-600 text-white hover:bg-primary-700 px-8 py-3 text-lg shadow-md"
+                  className="inline-flex items-center gap-3 font-medium rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95 active:shadow-inner hover:shadow-lg bg-primary-600 text-white hover:bg-primary-700 px-8 py-3 text-lg shadow-md"
                 >
                   <Mail className="w-5 h-5 text-white" />
                   Join Our Community

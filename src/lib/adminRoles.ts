@@ -17,6 +17,12 @@ export const ADMIN_ROLES = [
         description: 'Manage coffee morning events and announcements',
         color: 'amber',
     },
+    {
+        id: 'committee',
+        label: 'Committee',
+        description: 'Add, edit and remove committee members and trustees',
+        color: 'teal',
+    },
 ] as const;
 
 export type AdminRole = typeof ADMIN_ROLES[number]['id'];
@@ -26,4 +32,5 @@ export const ROLE_COLORS: Record<string, { badge: string; dot: string }> = {
     blue:  { badge: 'bg-blue-50 text-blue-700 border-blue-100',   dot: 'bg-blue-400' },
     green: { badge: 'bg-green-50 text-green-700 border-green-100', dot: 'bg-green-400' },
     amber: { badge: 'bg-amber-50 text-amber-700 border-amber-100', dot: 'bg-amber-400' },
+    teal:  { badge: 'bg-teal-50 text-teal-700 border-teal-100',    dot: 'bg-teal-400' },
 };

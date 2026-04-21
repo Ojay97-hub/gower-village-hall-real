@@ -8,8 +8,6 @@ import fallbackEvents from "../assets/cake-morning-summer.jpeg";
 import fallbackNature from "../assets/bell-flower.jpeg";
 import fallbackHeritage from "../assets/st-nicholas-church.png";
 import { useBlog } from "../context/BlogContext";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 const categoryIcons: Record<Exclude<Category, "All">, React.ReactNode> = {
     Community: <Users style={{ width: "16px", height: "16px" }} />,
@@ -233,10 +231,12 @@ export function ArticlePage() {
                 <div style={{ height: "1px", backgroundColor: "#e5e5e0", marginBottom: "32px" }} />
 
                 {/* Body Content */}
-                <div className="prose prose-lg prose-primary max-w-none" style={{ display: "flex", flexDirection: "column", gap: "24px", color: "#444" }}>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {post.content_markdown}
-                    </ReactMarkdown>
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px", color: "#444" }}>
+                    {post.content_markdown.split(/\n\n+/).map((paragraph, i) => (
+                        <p key={i} style={{ fontSize: "1.125rem", lineHeight: "1.75", whiteSpace: "pre-wrap" }}>
+                            {paragraph}
+                        </p>
+                    ))}
                 </div>
 
                 {/* Divider */}

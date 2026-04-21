@@ -5,8 +5,11 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useCommittee } from "../context/CommitteeContext";
 
 export function Committee() {
+  const { members, loading } = useCommittee();
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -91,83 +94,55 @@ export function Committee() {
                   </div>
                 </div>
 
-                {/* Chair - spans 2 columns for prominence */}
-                <div className="bg-primary-50 rounded-2xl p-6 md:col-span-2">
-                  <h3 className="mb-2">Dale Ponting</h3>
-                  <p className="text-sm text-gray-600">Chair</p>
+                {/* Ilston Community Council Card */}
+                <div className="bg-white border-2 border-primary-200 rounded-2xl p-6 md:col-span-2 flex flex-col">
+                  <div className="flex items-start mb-3">
+                    <ExternalLink className="w-8 h-8 text-primary-600 mr-3 flex-shrink-0" />
+                    <div>
+                      <h3 className="mb-2">
+                        Ilston Community Council
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                    Penmaen and Nicholaston Village Hall is part
+                    of the Ilston Community Council area. The
+                    Community Council represents local residents
+                    and works alongside community organisations
+                    like ours to support the Gower area.
+                  </p>
+                  <div className="mt-auto">
+                    <a
+                      href="https://ilstoncommunitycouncil.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary-600 hover:text-primary-700 flex items-center underline"
+                    >
+                      Visit ilstoncommunitycouncil.com
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    </a>
+                  </div>
                 </div>
 
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Claire Marson</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Cody Bates</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Claire Cotter</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Brian Martin</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Annzella Gregg</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Jacquelyn Ponting</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                {/* Spans 2 columns for visual interest */}
-                <div className="bg-primary-50 rounded-2xl p-6 md:col-span-2">
-                  <h3 className="mb-2">Dr Sophie Henson</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Catherine Patton</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                <div className="bg-primary-50 rounded-2xl p-6">
-                  <h3 className="mb-2">Peter Burgess</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
-
-                {/* Spans 2 columns to fill the row nicely */}
-                <div className="bg-primary-50 rounded-2xl p-6 md:col-span-2">
-                  <h3 className="mb-2">Dr Jerry Kingham</h3>
-                  <p className="text-sm text-gray-600">
-                    Trustee
-                  </p>
-                </div>
+                {/* Dynamic members from database */}
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="bg-primary-50 rounded-2xl p-6 animate-pulse">
+                      <div className="h-5 bg-primary-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-primary-100 rounded w-1/3" />
+                    </div>
+                  ))
+                ) : (
+                  members.map((member) => (
+                    <div
+                      key={member.id}
+                      className={`bg-primary-50 rounded-2xl p-6 ${member.role === "Chair" ? "md:col-span-2" : ""}`}
+                    >
+                      <h3 className="mb-2">{member.name}</h3>
+                      <p className="text-sm text-gray-600">{member.role}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
