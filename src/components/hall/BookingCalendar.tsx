@@ -21,31 +21,40 @@ interface BookingCalendarProps {
   onDateSelect?: (date: string, endDate: string) => void;
 }
 
-// Color palette for bookings - vibrant but soft, matching the Hallmaster aesthetic
-const BOOKING_COLORS = [
-  { bg: '#e0f2fe', text: '#0c4a6e', border: '#38bdf8' },   // sky
-  { bg: '#dcfce7', text: '#14532d', border: '#4ade80' },   // green
-  { bg: '#fef3c7', text: '#78350f', border: '#fbbf24' },   // amber
-  { bg: '#fce7f3', text: '#831843', border: '#f472b6' },   // pink
-  { bg: '#e0e7ff', text: '#3730a3', border: '#818cf8' },   // indigo
-  { bg: '#ccfbf1', text: '#134e4a', border: '#2dd4bf' },   // teal
-  { bg: '#fff7ed', text: '#7c2d12', border: '#fb923c' },   // orange
-  { bg: '#f3e8ff', text: '#581c87', border: '#c084fc' },   // purple
-];
+// Session-based colour coding
+const SESSION_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  morning:   { bg: '#fef3c7', text: '#78350f', border: '#f59e0b', label: 'Morning' },
+  afternoon: { bg: '#e0f2fe', text: '#0c4a6e', border: '#38bdf8', label: 'Afternoon' },
+  evening:   { bg: '#ede9fe', text: '#3b0764', border: '#8b5cf6', label: 'Evening' },
+  allday:    { bg: '#dcfce7', text: '#14532d', border: '#4ade80', label: 'All Day' },
+  multi:     { bg: '#fce7f3', text: '#831843', border: '#f472b6', label: 'Multi-session' },
+  unknown:   { bg: '#f1f5f9', text: '#334155', border: '#94a3b8', label: 'Booked' },
+};
 
-function getBookingColor(index: number) {
-  return BOOKING_COLORS[index % BOOKING_COLORS.length];
+function getSessionColor(eventType: string | null) {
+  if (!eventType) return SESSION_COLORS.unknown;
+  const s = eventType.toLowerCase().replace(/[\s-]/g, '');
+  if (s === 'allday' || s === 'fullday') return SESSION_COLORS.allday;
+  const hasMorning   = s.includes('morning');
+  const hasAfternoon = s.includes('afternoon');
+  const hasEvening   = s.includes('evening');
+  const count = [hasMorning, hasAfternoon, hasEvening].filter(Boolean).length;
+  if (count > 1) return SESSION_COLORS.multi;
+  if (hasMorning)   return SESSION_COLORS.morning;
+  if (hasAfternoon) return SESSION_COLORS.afternoon;
+  if (hasEvening)   return SESSION_COLORS.evening;
+  return SESSION_COLORS.unknown;
 }
 
-// Simple hash for consistent color assignment per booking name
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash);
+function getSessionTag(eventType: string | null): string {
+  if (!eventType) return '';
+  const s = eventType.toLowerCase().replace(/[\s-]/g, '');
+  if (s === 'allday' || s === 'fullday') return 'All Day';
+  const parts: string[] = [];
+  if (s.includes('morning'))   parts.push('AM');
+  if (s.includes('afternoon')) parts.push('PM');
+  if (s.includes('evening'))   parts.push('Eve');
+  return parts.join(' · ');
 }
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -87,16 +96,16 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
 
   async function fetchBookings() {
     setLoading(true);
-    // Fetch bookings for the visible month range
-    const startDate = formatDate(year, month, 1);
-    const endDate = formatDate(year, month, getDaysInMonth(year, month));
+    const monthStart = formatDate(year, month, 1);
+    const monthEnd = formatDate(year, month, getDaysInMonth(year, month));
 
+    // Fetch bookings whose date range overlaps with this month
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
       .eq('status', 'confirmed')
-      .gte('date', startDate)
-      .lte('date', endDate)
+      .lte('date', monthEnd)
+      .or(`end_date.gte.${monthStart},and(end_date.is.null,date.gte.${monthStart})`)
       .order('date', { ascending: true });
 
     if (!error && data) {
@@ -106,11 +115,20 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
   }
 
   const bookingsByDate = useMemo(() => {
-    const map = new Map<string, Booking[]>();
+    const map = new Map<string, { booking: Booking; isStart: boolean; isEnd: boolean }[]>();
     bookings.forEach(booking => {
-      const dateKey = booking.date;
-      const existing = map.get(dateKey) || [];
-      map.set(dateKey, [...existing, booking]);
+      const startStr = booking.date;
+      const endStr = booking.end_date || booking.date;
+      const cur = new Date(startStr + 'T00:00:00');
+      const end = new Date(endStr + 'T00:00:00');
+      while (cur <= end) {
+        const dateKey = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+        const isStart = dateKey === startStr;
+        const isEnd = dateKey === endStr;
+        const existing = map.get(dateKey) || [];
+        map.set(dateKey, [...existing, { booking, isStart, isEnd }]);
+        cur.setDate(cur.getDate() + 1);
+      }
     });
     return map;
   }, [bookings]);
@@ -293,6 +311,10 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
           const inRange = isInRange(day);
           const isClickable = onDateSelect && !isPast;
 
+          // Monday-based day-of-week (0=Mon … 6=Sun) for spanning logic
+          const rawDow = new Date(year, month, day).getDay();
+          const mondayDow = rawDow === 0 ? 6 : rawDow - 1;
+
           const cellClasses = [
             'booking-cal-cell',
             todayHighlight ? 'booking-cal-cell--today' : '',
@@ -313,20 +335,45 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
                 {day}
               </span>
               <div className="booking-cal-events">
-                {dayBookings.slice(0, 3).map((booking) => {
-                  const color = getBookingColor(hashString(booking.name));
+                {dayBookings.slice(0, 3).map(({ booking, isStart, isEnd }) => {
+                  const color = getSessionColor(booking.event_type);
+                  const sessionTag = getSessionTag(booking.event_type);
+                  const isMulti = !!(booking.end_date && booking.end_date !== booking.date);
+                  const isFirstInRow = !isMulti || isStart || mondayDow === 0;
+                  const isLastInRow = !isMulti || isEnd || mondayDow === 6;
+                  const extendsLeft = isMulti && !isFirstInRow;
+                  const extendsRight = isMulti && !isLastInRow;
+
+                  const cls = [
+                    'booking-cal-event',
+                    isMulti ? 'booking-cal-event--multi' : '',
+                    extendsLeft ? 'booking-cal-event--extends-left' : '',
+                    extendsRight ? 'booking-cal-event--extends-right' : '',
+                    isMulti && isFirstInRow ? 'booking-cal-event--row-start' : '',
+                    isMulti && isLastInRow ? 'booking-cal-event--row-end' : '',
+                  ].filter(Boolean).join(' ');
+
                   return (
                     <div
-                      key={booking.id}
-                      className="booking-cal-event"
+                      key={`${booking.id}-${dateKey}`}
+                      className={cls}
                       style={{
                         backgroundColor: color.bg,
                         color: color.text,
-                        borderLeft: `3px solid ${color.border}`,
+                        borderLeft: isFirstInRow ? `3px solid ${color.border}` : 'none',
                       }}
-                      title={`${booking.name}${booking.event_type ? ` - ${booking.event_type}` : ''}`}
+                      title={`${booking.name}${booking.end_date && booking.end_date !== booking.date ? ` (${formatDateDisplay(booking.date)} – ${formatDateDisplay(booking.end_date)})` : ''}${booking.event_type ? ` · ${booking.event_type}` : ''}`}
                     >
-                      <span className="booking-cal-event-name">{booking.name}</span>
+                      {isFirstInRow ? (
+                        <>
+                          <span className="booking-cal-event-name">{booking.name}</span>
+                          {sessionTag && (
+                            <span className="booking-cal-event-session">{sessionTag}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="booking-cal-event-name">&nbsp;</span>
+                      )}
                     </div>
                   );
                 })}
@@ -341,9 +388,20 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
 
       {/* Legend */}
       <div className="booking-cal-legend">
-        <span className="booking-cal-legend-text">
-          Showing confirmed bookings only
-        </span>
+        <div className="booking-cal-legend-sessions">
+          {(Object.entries(SESSION_COLORS) as [string, typeof SESSION_COLORS[keyof typeof SESSION_COLORS]][])
+            .filter(([k]) => k !== 'unknown')
+            .map(([key, c]) => (
+              <span
+                key={key}
+                className="booking-cal-legend-chip"
+                style={{ background: c.bg, color: c.text, borderColor: c.border }}
+              >
+                {c.label}
+              </span>
+            ))}
+        </div>
+        <span className="booking-cal-legend-text">Confirmed bookings only</span>
       </div>
     </div>
   );

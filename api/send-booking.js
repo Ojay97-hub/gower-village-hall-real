@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, phone, date, endDate, details } = req.body || {};
+  const { name, email, phone, date, endDate, session, details } = req.body || {};
 
   if (!name || !email || !details || !date) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -94,6 +94,7 @@ module.exports = async (req, res) => {
           name,
           email,
           phone: phone || null,
+          event_type: session || null,
           date,
           end_date: endDate || null,
           message: details || null,

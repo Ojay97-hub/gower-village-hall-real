@@ -284,6 +284,37 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Multi-day spanning events */
+.booking-cal-event--multi {
+  border-radius: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* Extends flush to left cell edge (continuation from previous cell) */
+.booking-cal-event--extends-left {
+  margin-left: -0.35rem;
+}
+
+/* Extends flush to right cell edge (continues into next cell) */
+.booking-cal-event--extends-right {
+  margin-right: -0.35rem;
+}
+
+/* Restore left rounding at actual start or first cell of a new row */
+.booking-cal-event--row-start {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  padding-left: 5px;
+}
+
+/* Restore right rounding at actual end or last cell of a row */
+.booking-cal-event--row-end {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  padding-right: 5px;
+}
+
 /* Events in selected cells should have light text */
 .booking-cal-cell--selected .booking-cal-event,
 .booking-cal-cell--end-selected .booking-cal-event {
@@ -294,6 +325,17 @@
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.booking-cal-event-session {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .booking-cal-more {
@@ -310,17 +352,34 @@
 
 /* Legend */
 .booking-cal-legend {
-  padding: 0.6rem 1rem;
+  padding: 0.65rem 1rem;
   background: #f8faf8;
   border-top: 1px solid #e2e8e2;
   display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.booking-cal-legend-sessions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   justify-content: center;
 }
 
+.booking-cal-legend-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.01em;
+}
+
 .booking-cal-legend-text {
-  font-size: 0.72rem;
-  color: #6b7280;
+  font-size: 0.68rem;
+  color: #9ca3af;
   font-weight: 500;
 }
 

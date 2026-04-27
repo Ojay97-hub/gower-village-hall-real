@@ -1,11 +1,83 @@
 
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
+import fs from 'fs';
+import { pathToFileURL } from 'url';
+
+function localApiPlugin(envDir: string): Plugin {
+  const apiDir = path.resolve(envDir, 'api');
+  let envLoaded = false;
+
+  const ensureEnv = () => {
+    if (envLoaded) return;
+    const env = loadEnv('', envDir, '');
+    for (const k of Object.keys(env)) {
+      if (process.env[k] === undefined) process.env[k] = env[k];
+    }
+    envLoaded = true;
+  };
+
+  const handler = async (req: any, res: any, next: any) => {
+    if (!req.url || !req.url.startsWith('/api/')) return next();
+
+    const urlPath = req.url.split('?')[0];
+    const route = urlPath.replace(/^\/api\//, '').replace(/\/$/, '');
+    const filePath = path.join(apiDir, `${route}.js`);
+
+    if (!fs.existsSync(filePath)) return next();
+
+    ensureEnv();
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const raw = Buffer.concat(chunks).toString('utf8');
+    let body: any = {};
+    if (raw) {
+      try { body = JSON.parse(raw); } catch { body = raw; }
+    }
+    req.body = body;
+
+    const vercelRes: any = res;
+    vercelRes.status = (code: number) => { res.statusCode = code; return vercelRes; };
+    vercelRes.json = (obj: any) => {
+      if (!res.headersSent) res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(obj));
+      return vercelRes;
+    };
+    vercelRes.send = (data: any) => {
+      res.end(typeof data === 'string' ? data : JSON.stringify(data));
+      return vercelRes;
+    };
+
+    try {
+      const mod: any = await import(pathToFileURL(filePath).href);
+      const fn = typeof mod === 'function' ? mod : (mod.default ?? mod);
+      await fn(req, vercelRes);
+    } catch (err: any) {
+      console.error('[local-api]', filePath, err);
+      if (!res.headersSent) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: err?.message || 'Internal server error' }));
+      }
+    }
+  };
+
+  return {
+    name: 'local-api-routes',
+    configureServer(server) {
+      server.middlewares.use(handler);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(handler);
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), localApiPlugin(__dirname)],
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {

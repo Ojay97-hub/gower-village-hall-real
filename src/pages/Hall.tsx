@@ -145,7 +145,12 @@ export function Hall() {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      let data: { success?: boolean; error?: string } = {};
+      try {
+        data = await response.json();
+      } catch {
+        // response body was empty or non-JSON
+      }
 
       if (response.ok && data.success) {
         setBookingStatus('success');
@@ -157,7 +162,7 @@ export function Hall() {
     } catch (err) {
       console.error('[BookingForm] Network error:', err);
       setBookingStatus('error');
-      setBookingError('Network error. Please check your connection and try again.');
+      setBookingError('Something went wrong sending your enquiry. Please try again or contact us directly.');
     } finally {
       setBookingSubmitting(false);
     }
@@ -574,10 +579,16 @@ export function Hall() {
               <p className="text-gray-600 mb-8 text-sm leading-relaxed text-left">
                 Join us for friendly coffee mornings with homemade cakes and good conversation.
               </p>
-              <div className="mt-auto">
+              <div className="mt-auto flex flex-col gap-3">
                 <p className="text-sm font-medium text-gray-700 bg-gray-50 px-4 py-2 rounded-full p-2">
                   First Saturday, 10:30 - 12:30
                 </p>
+                <Link
+                  to="/hall/coffee-morning"
+                  className="text-sm font-medium text-primary-600 hover:text-primary-700 underline underline-offset-2 transition-colors"
+                >
+                  Find out more &rarr;
+                </Link>
               </div>
             </div>
 

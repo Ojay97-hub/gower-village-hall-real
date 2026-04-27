@@ -34,6 +34,7 @@ export function AdminBookings() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [updatingSessionId, setUpdatingSessionId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchBookings();
@@ -53,6 +54,21 @@ export function AdminBookings() {
             setBookings(data ?? []);
         }
         setLoading(false);
+    }
+
+    async function updateSession(id: string, session: string) {
+        setUpdatingSessionId(id);
+        const { error: updateError } = await supabase
+            .from('bookings')
+            .update({ event_type: session || null })
+            .eq('id', id);
+
+        if (!updateError) {
+            setBookings(prev =>
+                prev.map(b => (b.id === id ? { ...b, event_type: session || null } : b))
+            );
+        }
+        setUpdatingSessionId(null);
     }
 
     async function updateStatus(id: string, status: BookingStatus) {
@@ -137,11 +153,22 @@ export function AdminBookings() {
                                             {booking.phone && (
                                                 <p className="text-xs text-gray-400 mt-0.5">{booking.phone}</p>
                                             )}
-                                            {booking.event_type && (
-                                                <span className="mt-1 inline-block px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                                    {booking.event_type}
-                                                </span>
-                                            )}
+                                            <select
+                                                value={booking.event_type ?? ''}
+                                                disabled={updatingSessionId === booking.id}
+                                                onChange={e => updateSession(booking.id, e.target.value)}
+                                                className="mt-1.5 block text-xs rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-400 disabled:opacity-50 cursor-pointer"
+                                            >
+                                                <option value="">Session not set</option>
+                                                <option value="morning">Morning (8am–12pm)</option>
+                                                <option value="afternoon">Afternoon (12pm–5pm)</option>
+                                                <option value="evening">Evening (5pm–10pm)</option>
+                                                <option value="allday">All Day</option>
+                                                <option value="morning, afternoon">Morning + Afternoon</option>
+                                                <option value="morning, evening">Morning + Evening</option>
+                                                <option value="afternoon, evening">Afternoon + Evening</option>
+                                                <option value="morning, afternoon, evening">Morning + Afternoon + Evening</option>
+                                            </select>
                                         </td>
 
                                         {/* Date(s) */}
