@@ -51,5 +51,29 @@ Make sure you have Node.js and a package manager (like `npm` or `yarn`) installe
    npm run dev
    ```
 
+## 🧪 Testing
+
+The test suite uses **[Vitest](https://vitest.dev/)** and **[React Testing Library](https://testing-library.com/)**. All 34 tests run in under 3 seconds with no external dependencies.
+
+### Run the tests
+
+```bash
+npm test          # run once and exit (CI-friendly)
+npm run test:watch  # watch mode — re-runs on file save
+```
+
+### What is covered
+
+| Test file | Tests | What is verified |
+|---|---|---|
+| `src/__tests__/escapeHtml.test.ts` | 7 | User-supplied strings are HTML-escaped before being inserted into email bodies, preventing HTML injection. |
+| `src/__tests__/auth.logic.test.ts` | 11 | Master-admin email lookup (`isMasterAdminEmail`) handles case-sensitivity, whitespace, null, undefined, and empty env vars. Role gating (`hasRole`) lets master admins bypass all role checks and correctly gates regular admin users. |
+| `src/__tests__/AdminRoute.test.tsx` | 5 | Unauthenticated users redirect to `/admin/login`. Users with the wrong role see "Access Denied". Users with the correct role see the protected page. A loading skeleton is shown while auth resolves. |
+| `src/__tests__/MasterAdminRoute.test.tsx` | 3 | Only master admins reach `/admin/users`; all others redirect to `/admin/login`. Loading skeleton is shown during auth resolution. |
+| `src/__tests__/send-booking.test.js` | 6 | Non-POST requests return `405`. Missing `name`, `email`, `date`, or `details` each return `400 { error: "Missing required fields" }`. |
+| `src/__tests__/send-newsletter.test.js` | 2 | Non-POST requests return `405`. A request without `email` returns `400 { error: "Email is required" }`. |
+
+> **Note on email delivery:** The email-sending path in the API handlers uses the [Nodemailer](https://nodemailer.com/) CJS module, which cannot be mocked in vitest unit tests without refactoring the production code. Email delivery should be verified end-to-end by submitting the live booking or newsletter form on the deployed site and confirming receipt.
+
 ## 🎨 Original Design
 The original design concepts for the project can be found on [Figma](https://www.figma.com/design/nFqAeB7GiD6K3kmQlD6KMj/gower-village-hall).
