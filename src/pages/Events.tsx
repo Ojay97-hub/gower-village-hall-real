@@ -71,7 +71,8 @@ const colorMap: Record<string, {
 
 export function Events() {
     const { events, regularActivities, loading, deleteEvent, deleteRegularActivity } = useEvents();
-    const { isAdmin } = useAuth();
+    const { hasRole } = useAuth();
+    const canManageEvents = hasRole('events');
 
     // Event State
     const [showEventForm, setShowEventForm] = useState(false);
@@ -234,7 +235,7 @@ export function Events() {
                 <div className="flex justify-between items-center mb-12">
                     <h2 className="text-2xl font-bold text-gray-900">Upcoming Events</h2>
 
-                    {isAdmin && (
+                    {canManageEvents && (
                         <button
                             onClick={handleCreate}
                             className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
@@ -288,7 +289,7 @@ export function Events() {
                                                 </span>
 
                                                 {/* Admin Actions */}
-                                                {isAdmin && (
+                                                {canManageEvents && (
                                                     <div className="flex items-center gap-1 md:gap-2">
                                                         <button
                                                             onClick={() => handleEdit(event)}
@@ -376,7 +377,7 @@ export function Events() {
                             </span>
                             <h2 className="text-2xl font-bold text-gray-900">Regular Activities</h2>
                         </div>
-                        {isAdmin && (
+                        {canManageEvents && (
                             <button
                                 onClick={handleActivityCreate}
                                 className="flex items-center gap-2 bg-white text-primary-600 border border-primary-200 px-4 py-2 rounded-lg hover:bg-primary-50 transition-colors shadow-sm"
@@ -428,7 +429,7 @@ export function Events() {
                                                 </h3>
 
                                                 {/* Admin Controls */}
-                                                {isAdmin && (
+                                                {canManageEvents && (
                                                     <div className="flex gap-2 flex-shrink-0">
                                                         <button
                                                             onClick={() => handleActivityEdit(activity)}

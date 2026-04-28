@@ -62,7 +62,7 @@ export function AdminLogin() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const from = location.state?.from?.pathname || '/hall/events';
+    const from = location.state?.from?.pathname || '/';
 
     // Fetch the list of admin users to populate "Choose an Account"
     useEffect(() => {

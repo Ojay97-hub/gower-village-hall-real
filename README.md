@@ -49,7 +49,7 @@ Community events schedule and regular activities page.
 
 - Upcoming events fetched from the `events` table.
 - Recurring activities fetched from the `regular_activities` table.
-- Inline admin controls for users with the `blog` role.
+- Inline admin controls for users with the `events` role.
 
 ### `/hall/coffee-morning`
 
@@ -161,17 +161,19 @@ Requires master admin access.
 
 ### Admin Toolbar
 
-A floating admin toolbar is available to logged-in admins throughout the site, providing quick links to the relevant management areas, session switching, and logout.
+A floating admin toolbar is available to logged-in admins throughout the site. Master admins see the full set of management shortcuts. Other administrators only see the shortcuts for their assigned roles, along with session switching and logout.
 
 ### Role Summary
 
 | Role | Access |
 |---|---|
-| `blog` | Blog CMS and event management |
-| `bookings` | Booking management |
-| `committee` | Committee management |
-| `coffee_mornings` | Coffee morning CMS and gallery |
-| Master Admin | All admin areas plus user management |
+| `blog` | Access to the Manage Blog area. |
+| `events` | Access to the Manage Events area and event management tools. |
+| `bookings` | Access to the Manage Bookings area. |
+| `committee` | Access to the Manage Committee area. |
+| `coffee_mornings` | Access to the Manage Coffee Morning area and gallery tools. |
+| `churches` | Access to the Manage Churches area. |
+| Master Admin | Access to all management areas, the full admin session menu, and user administration. |
 
 ## API Routes
 

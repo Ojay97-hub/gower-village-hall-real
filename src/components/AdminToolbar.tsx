@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield, BookOpen, Users, CalendarDays, UsersRound, Coffee, Landmark, Calendar } from 'lucide-react';
+import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield, BookOpen, Users, CalendarDays, UsersRound, Coffee, Landmark, Calendar, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function AdminToolbar() {
-    const { isAdmin, isMasterAdmin, hasRole, userEmail, switchUser, adminLogout } = useAuth();
+    const { isAdmin, isMasterAdmin, hasRole, adminRoles, userEmail, switchUser, adminLogout } = useAuth();
     const navigate = useNavigate();
     const [collapsed, setCollapsed] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -16,6 +16,8 @@ export function AdminToolbar() {
     }, [isAdmin]);
 
     if (!isAdmin) return null;
+
+    const hasAssignedRole = (role: string) => adminRoles.includes(role);
 
     const adminActions = [
         isMasterAdmin ? {
@@ -34,7 +36,7 @@ export function AdminToolbar() {
             icon: BookOpen,
             className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
         } : null,
-        hasRole('blog') ? {
+        hasAssignedRole('events') || isMasterAdmin ? {
             key: 'events',
             label: 'Manage Events',
             title: 'Manage Events',
@@ -42,7 +44,7 @@ export function AdminToolbar() {
             icon: Calendar,
             className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
         } : null,
-        hasRole('bookings') ? {
+        hasAssignedRole('bookings') || isMasterAdmin ? {
             key: 'bookings',
             label: 'Manage Bookings',
             title: 'Manage Bookings',
@@ -50,7 +52,7 @@ export function AdminToolbar() {
             icon: CalendarDays,
             className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
         } : null,
-        hasRole('committee') ? {
+        hasAssignedRole('committee') || isMasterAdmin ? {
             key: 'committee',
             label: 'Manage Committee',
             title: 'Manage Committee',
@@ -58,7 +60,7 @@ export function AdminToolbar() {
             icon: UsersRound,
             className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
         } : null,
-        hasRole('coffee_mornings') ? {
+        hasAssignedRole('coffee_mornings') || isMasterAdmin ? {
             key: 'coffee-morning',
             label: 'Manage Coffee Morning',
             title: 'Manage Coffee Morning',
@@ -66,7 +68,7 @@ export function AdminToolbar() {
             icon: Coffee,
             className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
         } : null,
-        hasRole('churches') ? {
+        hasAssignedRole('churches') || isMasterAdmin ? {
             key: 'churches',
             label: 'Manage Churches',
             title: 'Manage Churches',
@@ -140,6 +142,14 @@ export function AdminToolbar() {
                                     </button>
                                 );
                             })}
+                            <button
+                                onClick={() => navigate('/admin/account')}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-primary-200 hover:bg-primary-50 hover:border-primary-300 text-gray-700 transition-all cursor-pointer shadow-sm"
+                                title="Manage Account"
+                            >
+                                <Settings className="h-4 w-4 text-primary-600" />
+                                Manage Account
+                            </button>
                             <button
                                 onClick={switchUser}
                                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-primary-200 hover:bg-primary-50 hover:border-primary-300 text-gray-700 transition-all cursor-pointer shadow-sm"

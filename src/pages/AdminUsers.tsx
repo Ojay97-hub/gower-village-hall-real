@@ -21,18 +21,19 @@ function RoleBadge({ roleId }: { roleId: string }) {
 
 function EditRolesModal({
     target,
-    isMasterAdminTarget,
+    isLockedMasterAdminTarget,
     isSaving,
     onSave,
     onCancel,
 }: {
-    target: { id: string; email: string; name: string; roles: string[] };
-    isMasterAdminTarget: boolean;
+    target: { id: string; email: string; name: string; roles: string[]; isMasterAdmin: boolean };
+    isLockedMasterAdminTarget: boolean;
     isSaving: boolean;
-    onSave: (roles: string[]) => void;
+    onSave: (payload: { roles: string[]; isMasterAdmin: boolean }) => void;
     onCancel: () => void;
 }) {
     const [selected, setSelected] = useState<string[]>(target.roles);
+    const [isMasterAdminSelected, setIsMasterAdminSelected] = useState(target.isMasterAdmin);
 
     const toggle = (roleId: string) => {
         setSelected(prev =>
@@ -60,40 +61,62 @@ function EditRolesModal({
                     <p className="text-sm text-gray-500 mt-0.5">{target.name || target.email}</p>
                 </div>
 
-                {isMasterAdminTarget ? (
+                {isLockedMasterAdminTarget && (
                     <div className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-100 rounded-xl text-sm text-purple-700">
                         <ShieldCheck className="w-5 h-5 flex-shrink-0" />
-                        This user is a Master Admin and has full access to all sections regardless of role assignments.
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {ADMIN_ROLES.map(role => {
-                            const checked = selected.includes(role.id);
-                            const colors = ROLE_COLORS[role.color] ?? ROLE_COLORS['blue'];
-                            return (
-                                <label
-                                    key={role.id}
-                                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                                        checked
-                                            ? `${colors.badge} border-current`
-                                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={checked}
-                                        onChange={() => toggle(role.id)}
-                                        className="mt-0.5 rounded"
-                                    />
-                                    <div>
-                                        <div className="font-medium text-sm">{role.label}</div>
-                                        <div className="text-xs text-gray-500 mt-0.5">{role.description}</div>
-                                    </div>
-                                </label>
-                            );
-                        })}
+                        This user is listed as a protected Master Admin and always has full access regardless of role assignments.
                     </div>
                 )}
+
+                <div className="space-y-2">
+                    <label
+                        className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
+                            isMasterAdminSelected
+                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        } ${isLockedMasterAdminTarget ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={isMasterAdminSelected}
+                            disabled={isLockedMasterAdminTarget}
+                            onChange={() => setIsMasterAdminSelected(prev => !prev)}
+                            className="mt-0.5 rounded"
+                        />
+                        <div>
+                            <div className="font-medium text-sm">Master Admin</div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                                Full access to all management areas, the complete admin session menu, and user administration.
+                            </div>
+                        </div>
+                    </label>
+
+                    {ADMIN_ROLES.map(role => {
+                        const checked = selected.includes(role.id);
+                        const colors = ROLE_COLORS[role.color] ?? ROLE_COLORS['blue'];
+                        return (
+                            <label
+                                key={role.id}
+                                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                    checked
+                                        ? `${colors.badge} border-current`
+                                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggle(role.id)}
+                                    className="mt-0.5 rounded"
+                                />
+                                <div>
+                                    <div className="font-medium text-sm">{role.label}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{role.description}</div>
+                                </div>
+                            </label>
+                        );
+                    })}
+                </div>
 
                 <div className="flex gap-3 justify-end mt-2">
                     <button
@@ -103,22 +126,20 @@ function EditRolesModal({
                     >
                         Cancel
                     </button>
-                    {!isMasterAdminTarget && (
-                        <button
-                            onClick={() => onSave(selected)}
-                            disabled={isSaving}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-60"
-                        >
-                            {isSaving ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                'Save Roles'
-                            )}
-                        </button>
-                    )}
+                    <button
+                        onClick={() => onSave({ roles: selected, isMasterAdmin: isMasterAdminSelected })}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-60"
+                    >
+                        {isSaving ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            'Save Roles'
+                        )}
+                    </button>
                 </div>
             </div>
         </div>
@@ -300,7 +321,7 @@ export function AdminUsers() {
     const [confirmRemove, setConfirmRemove] = useState<{ id: string; email: string } | null>(null);
     const [isRemoving, setIsRemoving] = useState(false);
 
-    const [editRoles, setEditRoles] = useState<{ id: string; email: string; name: string; roles: string[] } | null>(null);
+    const [editRoles, setEditRoles] = useState<{ id: string; email: string; name: string; roles: string[]; isMasterAdmin: boolean } | null>(null);
     const [isSavingRoles, setIsSavingRoles] = useState(false);
 
     const [confirmPromote, setConfirmPromote] = useState<{ id: string; email: string; name: string } | null>(null);
@@ -366,12 +387,29 @@ export function AdminUsers() {
         setConfirmRemove(null);
     };
 
-    const handleSaveRoles = async (roles: string[]) => {
+    const handleSaveRoles = async ({ roles, isMasterAdmin }: { roles: string[]; isMasterAdmin: boolean }) => {
         if (!editRoles) return;
         setIsSavingRoles(true);
-        const { error } = await updateAdminUserRoles(editRoles.id, roles);
+        const { error: rolesError } = await updateAdminUserRoles(editRoles.id, roles);
+        if (rolesError) {
+            setIsSavingRoles(false);
+            alert(rolesError.message || 'Failed to update roles.');
+            return;
+        }
+
+        let privilegeError: Error | null = null;
+        if (!isMasterAdminEmail(editRoles.email) && editRoles.isMasterAdmin !== isMasterAdmin) {
+            const result = isMasterAdmin
+                ? await promoteMasterAdmin(editRoles.id)
+                : await demoteMasterAdmin(editRoles.id);
+            privilegeError = result.error;
+        }
+
         setIsSavingRoles(false);
-        if (error) alert(error.message || 'Failed to update roles.');
+        if (privilegeError) {
+            alert(privilegeError.message || 'Failed to update admin access.');
+            return;
+        }
         setEditRoles(null);
     };
 
@@ -388,7 +426,7 @@ export function AdminUsers() {
             {editRoles && (
                 <EditRolesModal
                     target={editRoles}
-                    isMasterAdminTarget={isMasterAdminEmail(editRoles.email)}
+                    isLockedMasterAdminTarget={isMasterAdminEmail(editRoles.email)}
                     isSaving={isSavingRoles}
                     onSave={handleSaveRoles}
                     onCancel={() => !isSavingRoles && setEditRoles(null)}
@@ -617,7 +655,7 @@ export function AdminUsers() {
                                                                             <ShieldPlus className="w-4 h-4" />
                                                                         </button>
                                                                         <button
-                                                                            onClick={() => setEditRoles({ id: u.id, email: u.email, name: u.name, roles: u.roles })}
+                                                                            onClick={() => setEditRoles({ id: u.id, email: u.email, name: u.name, roles: u.roles, isMasterAdmin: u.is_master_admin || isMasterAdminEmail(u.email) })}
                                                                             className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                                                                             title="Edit Roles"
                                                                         >
@@ -721,6 +759,17 @@ export function AdminUsers() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="flex items-start gap-2">
+                                    <span className="mt-1 inline-block w-2 h-2 rounded-full flex-shrink-0 bg-purple-500" />
+                                    <div>
+                                        <div className="text-sm font-medium text-gray-800">Master Admin</div>
+                                        <div className="text-xs text-gray-500">
+                                            Full access to all management areas, including user administration and the complete admin session menu.
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
