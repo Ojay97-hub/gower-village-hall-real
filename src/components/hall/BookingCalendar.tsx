@@ -141,6 +141,12 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
     setCurrentDate(new Date());
   };
 
+  const isAllDayBooked = (dateKey: string) =>
+    (bookingsByDate.get(dateKey) || []).some(({ booking }) => {
+      const s = (booking.event_type || '').toLowerCase().replace(/[\s-]/g, '');
+      return s === 'allday' || s === 'fullday';
+    });
+
   const handleDayClick = (day: number) => {
     if (!onDateSelect) return;
 
@@ -151,6 +157,9 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
 
     // Don't allow selecting past dates
     if (clickedDateObj < todayStart) return;
+
+    // Don't allow selecting fully booked (all-day) dates
+    if (isAllDayBooked(clickedDate)) return;
 
     if (!selectingEnd || !selectedDate) {
       // First click: set start date, clear end date
@@ -305,7 +314,8 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
           const selected = isSelected(day);
           const endSelected = isEndSelected(day);
           const inRange = isInRange(day);
-          const isClickable = onDateSelect && !isPast;
+          const fullyBooked = !isPast && isAllDayBooked(dateKey);
+          const isClickable = onDateSelect && !isPast && !fullyBooked;
 
           // Monday-based day-of-week (0=Mon … 6=Sun) for spanning logic
           const rawDow = new Date(year, month, day).getDay();
@@ -319,6 +329,7 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
             endSelected ? 'booking-cal-cell--end-selected' : '',
             inRange ? 'booking-cal-cell--in-range' : '',
             isClickable ? 'booking-cal-cell--clickable' : '',
+            fullyBooked ? 'booking-cal-cell--unavailable' : '',
           ].filter(Boolean).join(' ');
 
           return (

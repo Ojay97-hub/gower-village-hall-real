@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { BookingCalendar } from '../components/hall/BookingCalendar';
 import '../components/hall/BookingCalendar.css';
-import { Clock, Car, Music, Palette, Coffee, PoundSterling, X, CheckCircle, XCircle, Loader2, Mail, Users, Facebook, Sunrise, Sun, Moon, CalendarDays } from 'lucide-react';
+import { Clock, Car, Music, Palette, Coffee, PoundSterling, X, CheckCircle, XCircle, Loader2, Mail, Users, Facebook, Sunrise, Sun, Moon, CalendarDays, ArrowRight, ExternalLink } from 'lucide-react';
 
 const hallGateEntrance = '/images/edited-hall-gate.webp';
 const hallSideView = '/images/edited-side-hall.webp';
@@ -307,59 +307,50 @@ export function Hall() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Side - Booking Calendar */}
-            <div className="flex flex-col">
-              <BookingCalendar
-                selectedDate={bookingForm.date}
-                selectedEndDate={bookingForm.endDate}
-                onDateSelect={(date, endDate) => setBookingForm(prev => ({ ...prev, date, endDate }))}
-              />
-            </div>
+          <div className="flex flex-col gap-6">
+            {/* Combined booking card */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-2">
+                <h3>Booking Enquiry Form</h3>
+                <a
+                  href="https://www.facebook.com/panvillagehall"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Follow us on Facebook"
+                  style={{ color: '#1877F2' }}
+                  className="flex-shrink-0 flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm text-gray-500 font-medium">or contact us on Facebook</span>
+                </a>
+              </div>
 
-            {/* Right Side - Booking Form */}
-            <div className="flex flex-col">
-              <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg flex-grow">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-2">
-                  <h3>Booking Enquiry Form</h3>
-                  <a
-                    href="https://www.facebook.com/panvillagehall"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Follow us on Facebook"
-                    style={{ color: '#1877F2' }}
-                    className="flex-shrink-0 flex items-center gap-2 hover:opacity-80 transition-opacity"
-                  >
-                    <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-sm text-gray-500 font-medium">or contact us on Facebook</span>
-                  </a>
+              {/* Success Message */}
+              {bookingStatus === 'success' && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 border-l-4 border-l-green-500 rounded-lg flex items-start gap-4">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-green-800 font-semibold text-sm">Enquiry sent successfully!</p>
+                    <p className="text-green-700 text-sm mt-1">We'll get back to you as soon as possible.</p>
+                  </div>
                 </div>
+              )}
 
-                {/* Success Message */}
-                {bookingStatus === 'success' && (
-                  <div className="mb-6 p-4 bg-green-50 border border-green-200 border-l-4 border-l-green-500 rounded-lg flex items-start gap-4">
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-green-800 font-semibold text-sm">Enquiry sent successfully!</p>
-                      <p className="text-green-700 text-sm mt-1">We'll get back to you as soon as possible.</p>
-                    </div>
+              {/* Error Message */}
+              {bookingStatus === 'error' && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-lg flex items-start gap-4">
+                  <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-red-800 font-semibold text-sm">Failed to send enquiry</p>
+                    <p className="text-red-700 text-sm mt-1">{bookingError}</p>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Error Message */}
-                {bookingStatus === 'error' && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-lg flex items-start gap-4">
-                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-red-800 font-semibold text-sm">Failed to send enquiry</p>
-                      <p className="text-red-700 text-sm mt-1">{bookingError}</p>
-                    </div>
-                  </div>
-                )}
-
-                <form className="space-y-5" onSubmit={handleBookingSubmit}>
+              <form className="space-y-5" onSubmit={handleBookingSubmit}>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label htmlFor="name" className="block text-sm mb-2 text-gray-700 font-medium">
                       Name <span className="text-red-500">*</span>
@@ -406,237 +397,243 @@ export function Hall() {
                       disabled={bookingSubmitting}
                     />
                   </div>
+                </div>
 
-                  {/* Selected Dates - from calendar */}
-                  <div>
-                    <label className="block text-sm mb-2 text-gray-700 font-medium">
-                      Selected Date(s) <span className="text-red-500">*</span>
-                    </label>
-                    <div className={`w-full px-4 py-3 rounded-lg border text-sm ${
-                      bookingForm.date
-                        ? 'bg-green-50 border-green-200 text-green-800'
-                        : 'bg-gray-50 border-gray-200 text-gray-400'
-                    }`}>
-                      {bookingForm.date ? (
-                        <span className="font-medium">
-                          {new Date(bookingForm.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
-                          {bookingForm.endDate && (
-                            <>
-                              {' → '}
-                              {new Date(bookingForm.endDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
-                            </>
-                          )}
-                        </span>
-                      ) : (
-                        '← Select your dates on the calendar'
-                      )}
-                    </div>
+                {/* Selected Date(s) — calendar embedded inline */}
+                <div>
+                  <label className="block text-sm mb-2 text-gray-700 font-medium">
+                    Selected Date(s) <span className="text-red-500">*</span>
+                  </label>
+                  <BookingCalendar
+                    selectedDate={bookingForm.date}
+                    selectedEndDate={bookingForm.endDate}
+                    onDateSelect={(date, endDate) => setBookingForm(prev => ({ ...prev, date, endDate }))}
+                  />
+                </div>
+
+                {/* Session Time Selector */}
+                <div>
+                  <label className="block text-sm mb-2 text-gray-700 font-medium">
+                    Session Time <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { value: 'morning', label: 'Morning', Icon: Sunrise, desc: '8am – 12pm' },
+                      { value: 'afternoon', label: 'Afternoon', Icon: Sun, desc: '12pm – 5pm' },
+                      { value: 'evening', label: 'Evening', Icon: Moon, desc: '5pm – 10pm' },
+                      { value: 'allday', label: 'All Day', Icon: CalendarDays, desc: 'Full day' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setBookingForm(prev => {
+                          const val = opt.value as 'morning' | 'afternoon' | 'evening' | 'allday';
+                          if (val === 'allday') {
+                            return { ...prev, sessions: prev.sessions.includes('allday') ? [] : ['allday'] };
+                          }
+                          const without = prev.sessions.filter(s => s !== 'allday');
+                          return {
+                            ...prev,
+                            sessions: without.includes(val) ? without.filter(s => s !== val) : [...without, val],
+                          };
+                        })}
+                        disabled={bookingSubmitting}
+                        className={`flex flex-col items-center gap-1 px-3 py-3 rounded-lg border-2 transition-all text-center cursor-pointer ${
+                          bookingForm.sessions.includes(opt.value as 'morning' | 'afternoon' | 'evening' | 'allday')
+                            ? 'border-primary-500 bg-primary-50 text-primary-800 shadow-sm'
+                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        <opt.Icon className="w-5 h-5" />
+                        <span className="text-xs font-semibold">{opt.label}</span>
+                        <span className="text-[0.65rem] opacity-70">{opt.desc}</span>
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Session Time Selector */}
-                  <div>
-                    <label className="block text-sm mb-2 text-gray-700 font-medium">
-                      Session Time <span className="text-red-500">*</span>
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {[
-                        { value: 'morning', label: 'Morning', Icon: Sunrise, desc: '8am – 12pm' },
-                        { value: 'afternoon', label: 'Afternoon', Icon: Sun, desc: '12pm – 5pm' },
-                        { value: 'evening', label: 'Evening', Icon: Moon, desc: '5pm – 10pm' },
-                        { value: 'allday', label: 'All Day', Icon: CalendarDays, desc: 'Full day' },
-                      ].map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setBookingForm(prev => {
-                            const val = opt.value as 'morning' | 'afternoon' | 'evening' | 'allday';
-                            if (val === 'allday') {
-                              return { ...prev, sessions: prev.sessions.includes('allday') ? [] : ['allday'] };
-                            }
-                            const without = prev.sessions.filter(s => s !== 'allday');
-                            return {
-                              ...prev,
-                              sessions: without.includes(val) ? without.filter(s => s !== val) : [...without, val],
-                            };
-                          })}
-                          disabled={bookingSubmitting}
-                          className={`flex flex-col items-center gap-1 px-3 py-3 rounded-lg border-2 transition-all text-center ${
-                            bookingForm.sessions.includes(opt.value as 'morning' | 'afternoon' | 'evening' | 'allday')
-                              ? 'border-primary-500 bg-primary-50 text-primary-800 shadow-sm'
-                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          <opt.Icon className="w-5 h-5" />
-                          <span className="text-xs font-semibold">{opt.label}</span>
-                          <span className="text-[0.65rem] opacity-70">{opt.desc}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="details" className="block text-sm mb-2 text-gray-700 font-medium">
-                      Event Details <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      id="details"
-                      name="details"
-                      value={bookingForm.details}
-                      onChange={handleBookingChange}
-                      rows={4}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
-                      placeholder="Please tell us about your event, expected number of guests, and any special requirements..."
-                      required
-                      disabled={bookingSubmitting}
-                    />
-                  </div>
-
-                  {/* Booking summary confirmation */}
-                  {(bookingForm.date || bookingForm.sessions.length > 0) && (
-                    <div className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-4 py-3 space-y-1">
-                      <p className="font-medium text-gray-600 mb-1">You're enquiring about:</p>
-                      {bookingForm.date && (
-                        <p>
-                          <span className="text-gray-400">Date: </span>
-                          {new Date(bookingForm.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
-                          {bookingForm.endDate && (
-                            <> → {new Date(bookingForm.endDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</>
-                          )}
-                        </p>
-                      )}
-                      {bookingForm.sessions.length > 0 && (
-                        <p>
-                          <span className="text-gray-400">Session: </span>
-                          {bookingForm.sessions.map(s => ({
-                            morning: 'Morning (8am – 12pm)',
-                            afternoon: 'Afternoon (12pm – 5pm)',
-                            evening: 'Evening (5pm – 10pm)',
-                            allday: 'All Day',
-                          }[s])).join(' + ')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
+                <div>
+                  <label htmlFor="details" className="block text-sm mb-2 text-gray-700 font-medium">
+                    Event Details <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="details"
+                    name="details"
+                    value={bookingForm.details}
+                    onChange={handleBookingChange}
+                    rows={4}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
+                    placeholder="Please tell us about your event, expected number of guests, and any special requirements..."
+                    required
                     disabled={bookingSubmitting}
-                    className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm hover:shadow disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {bookingSubmitting ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      'Submit Enquiry'
-                    )}
-                  </button>
-                </form>
-              </div>
+                  />
+                </div>
 
-              {/* Support Section */}
-              <div className="mt-6 bg-white p-6 text-center rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-                <p className="text-gray-700 mb-4 font-medium">
-                  Help maintain the hall and ensure activities can continue
-                </p>
+                {/* Booking summary confirmation */}
+                {(bookingForm.date || bookingForm.sessions.length > 0) && (
+                  <div className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-4 py-3 space-y-1">
+                    <p className="font-medium text-gray-600 mb-1">You're enquiring about:</p>
+                    {bookingForm.date && (
+                      <p>
+                        <span className="text-gray-400">Date: </span>
+                        {new Date(bookingForm.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
+                        {bookingForm.endDate && (
+                          <> → {new Date(bookingForm.endDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</>
+                        )}
+                      </p>
+                    )}
+                    {bookingForm.sessions.length > 0 && (
+                      <p>
+                        <span className="text-gray-400">Session: </span>
+                        {bookingForm.sessions.map(s => ({
+                          morning: 'Morning (8am – 12pm)',
+                          afternoon: 'Afternoon (12pm – 5pm)',
+                          evening: 'Evening (5pm – 10pm)',
+                          allday: 'All Day',
+                        }[s])).join(' + ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <button
-                  onClick={() => setShowFriendsModal(true)}
-                  className="bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    padding: '0.625rem 1.5rem'
-                  }}
+                  type="submit"
+                  disabled={bookingSubmitting}
+                  className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm hover:shadow disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <Mail className="w-4 h-4" />
-                  Join as Friends
+                  {bookingSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Submit Enquiry'
+                  )}
                 </button>
-              </div>
+              </form>
+            </div>
+
+            {/* Support Section */}
+            <div className="bg-white p-6 text-center rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
+              <p className="text-gray-700 mb-4 font-medium">
+                Help maintain the hall and ensure activities can continue
+              </p>
+              <button
+                onClick={() => setShowFriendsModal(true)}
+                className="bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.625rem 1.5rem'
+                }}
+              >
+                <Mail className="w-4 h-4" />
+                Join as Friends
+              </button>
             </div>
           </div>
         </div>
 
         {/* Activities Section */}
-        <div id="activities" className="mb-20 pt-8">
-          <div className="flex justify-between items-center mb-12">
-            <h2 className="mb-0">Regular Activities</h2>
+        <div id="activities" className="mb-20 pt-6">
+          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="mb-2">Regular Activities</h2>
+              <p className="text-sm leading-6 text-gray-600">
+                Friendly monthly meetups, creative sessions, and community singing at the hall.
+              </p>
+            </div>
             <Link
               to="/hall/events"
-              className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors font-sm shadow-sm hover:shadow"
+              className="inline-flex items-center gap-2 self-start rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700"
             >
+              <CalendarDays className="h-4 w-4" />
               View Schedule
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all group flex flex-col items-start border border-gray-100 overflow-hidden">
-              <div className="w-full bg-gray-50 rounded-full flex items-center justify-center py-2 mb-8 group-hover:bg-primary-50 transition-colors p-2">
-                <Coffee className="w-6 h-6 text-gray-700 group-hover:text-primary-600" />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="group flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="mb-6 inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 transition-colors group-hover:bg-primary-100">
+                <Coffee className="h-5 w-5" />
               </div>
-              <h3 className="text-xl font-serif mb-4">Village Coffee Mornings</h3>
-              <p className="text-gray-600 mb-8 text-sm leading-relaxed text-left">
-                Join us for friendly coffee mornings with homemade cakes and good conversation.
-              </p>
-              <div className="mt-auto flex flex-col gap-3">
-                <p className="text-sm font-medium text-gray-700 bg-gray-50 px-4 py-2 rounded-full p-2">
-                  First Saturday, 10:30 - 12:30
+              <div className="flex flex-1 flex-col">
+                <h3 className="mb-3 font-serif text-lg font-semibold text-gray-800">Village Coffee Mornings</h3>
+                <p className="mb-6 text-sm leading-6 text-gray-600">
+                  Join us for friendly coffee mornings with homemade cakes and good conversation.
                 </p>
-                <Link
-                  to="/hall/coffee-morning"
-                  className="text-sm font-medium text-primary-600 hover:text-primary-700 underline underline-offset-2 transition-colors"
-                >
-                  Find out more &rarr;
-                </Link>
+                <div className="mt-auto flex flex-col items-start gap-4">
+                  <p className="rounded-full bg-primary-50 px-4 py-2 text-sm font-medium text-primary-800">
+                    First Saturday, 10:30 - 12:30
+                  </p>
+                  <Link
+                    to="/hall/coffee-morning"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary-700 transition-colors hover:text-primary-800"
+                  >
+                    Find out more
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all group flex flex-col items-start border border-gray-100 overflow-hidden">
-              <div className="w-full bg-gray-50 rounded-full flex items-center justify-center py-2 mb-8 group-hover:bg-primary-50 transition-colors p-2">
-                <Palette className="w-6 h-6 text-gray-700 group-hover:text-primary-600" />
+            <div className="group flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 transition-colors group-hover:bg-primary-100">
+                  <Palette className="h-5 w-5" />
+                </div>
+                <p className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">
+                  Coming soon
+                </p>
               </div>
-              <h3 className="text-xl font-serif mb-4">Art Classes</h3>
-              <p className="text-gray-600 mb-4 text-sm leading-relaxed text-left">
-                Creative art sessions for all skill levels in a welcoming environment.
-              </p>
-              <p className="text-amber-600 text-xs italic mb-8">
-                Coming soon — no sessions currently scheduled, but planned for the near future.
-              </p>
-              <div className="mt-auto">
-                <Link to="/hall/events" className="text-sm font-medium text-gray-700 bg-gray-50 px-6 py-2 rounded-full hover:bg-gray-100 transition-colors p-2">
-                  Check schedule
-                </Link>
+              <div className="flex flex-1 flex-col">
+                <h3 className="mb-3 font-serif text-lg font-semibold text-gray-800">Art Classes</h3>
+                <p className="mb-5 text-sm leading-6 text-gray-600">
+                  Creative art sessions for all skill levels in a welcoming environment.
+                </p>
+                <p className="mb-6 text-sm leading-6 text-gray-500">
+                  No sessions are currently scheduled, but new dates are being planned.
+                </p>
+                <div className="mt-auto">
+                  <Link to="/hall/events" className="inline-flex items-center gap-2 text-sm font-medium text-primary-700 transition-colors hover:text-primary-800">
+                    Check schedule
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all group flex flex-col items-start border border-gray-100 overflow-hidden">
-              <div className="w-full bg-gray-50 rounded-full flex items-center justify-center py-2 mb-8 group-hover:bg-primary-50 transition-colors p-2">
-                <Music className="w-6 h-6 text-gray-700 group-hover:text-primary-600" />
+            <div className="group flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <div className="mb-6 inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 transition-colors group-hover:bg-primary-100">
+                <Music className="h-5 w-5" />
               </div>
-              <h3 className="text-xl font-serif mb-4">Gower Harmony Choir</h3>
-              <p className="text-gray-600 mb-8 text-sm leading-relaxed text-left">
-                Beautiful harmonies and community singing led by Kate Davies.
-              </p>
-              <div className="mt-auto flex flex-col gap-2 w-full">
-                <a
-                  href="https://katedaviessinging.co.uk"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-base font-medium text-gray-600 hover:text-gray-800 flex items-center group/link transition-colors p-2"
-                >
-                  katedaviessinging.co.uk <span className="ml-1 transform group-hover/link:translate-x-1 transition-transform">→</span>
-                </a>
-                <a
-                  href="https://www.facebook.com/katedaviessinging"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 hover:text-blue-600 transition-colors p-2 flex items-center gap-2"
-                  aria-label="Facebook"
-                >
-                  <Facebook className="w-6 h-6" />
-                  <span className="text-base font-medium">View Facebook page</span>
-                </a>
+              <div className="flex flex-1 flex-col">
+                <h3 className="mb-3 font-serif text-lg font-semibold text-gray-800">Gower Harmony Choir</h3>
+                <p className="mb-6 text-sm leading-6 text-gray-600">
+                  Beautiful harmonies and community singing led by Kate Davies.
+                </p>
+                <div className="mt-auto flex flex-col gap-3">
+                  <a
+                    href="https://katedaviessinging.co.uk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary-700 transition-colors hover:text-primary-800"
+                  >
+                    Visit website
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                  <a
+                    href="https://www.facebook.com/katedaviessinging"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-blue-700"
+                    aria-label="Facebook"
+                  >
+                    <Facebook className="h-4 w-4" />
+                    View Facebook page
+                  </a>
+                </div>
               </div>
             </div>
           </div>

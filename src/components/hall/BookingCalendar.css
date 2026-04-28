@@ -1,11 +1,12 @@
 /* Booking Calendar Styles - Hallmaster-inspired monthly grid */
 
 .booking-calendar-wrapper {
+  display: flex;
+  flex-direction: column;
   background: white;
-  border-radius: 1rem;
+  border-radius: 0;
   border: 1px solid #e2e8e2;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 /* Header */
@@ -14,7 +15,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #3d5a3e 0%, #4a6741 100%);
+  background: linear-gradient(135deg, #6b7564 0%, #5c6555 100%);
   color: white;
 }
 
@@ -71,8 +72,8 @@
 /* Selection indicator bar */
 .booking-cal-selection-bar {
   padding: 0.6rem 1rem;
-  background: #f0fdf0;
-  border-bottom: 1px solid #d1e7d1;
+  background: #f5f5f0;
+  border-bottom: 1px solid #e8e8dd;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,7 +92,7 @@
 }
 
 .booking-cal-selection-hint strong {
-  color: #3d5a3e;
+  color: #6b7564;
   font-weight: 700;
 }
 
@@ -136,7 +137,8 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   position: relative;
-  min-height: 320px;
+  flex: 1;
+  min-height: 332px;
 }
 
 .booking-cal-loading {
@@ -147,13 +149,13 @@
   justify-content: center;
   background: rgba(255, 255, 255, 0.85);
   z-index: 10;
-  border-radius: 0 0 1rem 1rem;
+  border-radius: 0;
 }
 
 /* Calendar cells */
 .booking-cal-cell {
-  min-height: 90px;
-  padding: 0.35rem;
+  min-height: 92px;
+  padding: 0.45rem;
   border-right: 1px solid #f0f0f0;
   border-bottom: 1px solid #f0f0f0;
   background: white;
@@ -179,8 +181,8 @@
 }
 
 .booking-cal-cell--today {
-  background: #f0fdf0 !important;
-  box-shadow: inset 0 0 0 2px #3d5a3e;
+  background: #f5f5f0 !important;
+  box-shadow: inset 0 0 0 2px #6b7564;
 }
 
 /* Clickable cells */
@@ -188,72 +190,83 @@
   cursor: pointer;
 }
 
+/* Fully booked (all-day) — not selectable */
+.booking-cal-cell--unavailable {
+  cursor: not-allowed !important;
+}
+
+.booking-cal-cell--unavailable:hover {
+  background: white !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 .booking-cal-cell--clickable:hover {
-  background: #e8f5e8 !important;
+  background: #f0f3ec !important;
   transform: scale(1.02);
   z-index: 2;
-  box-shadow: 0 2px 8px rgba(61, 90, 62, 0.15);
+  box-shadow: 0 2px 8px rgba(107, 117, 100, 0.15);
 }
 
 /* Selected start date */
 .booking-cal-cell--selected {
-  background: #3d5a3e !important;
+  background: #6b7564 !important;
 }
 
 .booking-cal-cell--selected:hover {
-  background: #2d4a2e !important;
+  background: #5c6555 !important;
 }
 
 /* Selected end date */
 .booking-cal-cell--end-selected {
-  background: #3d5a3e !important;
+  background: #6b7564 !important;
 }
 
 .booking-cal-cell--end-selected:hover {
-  background: #2d4a2e !important;
+  background: #5c6555 !important;
 }
 
 /* Range between start and end */
 .booking-cal-cell--in-range {
-  background: #dcfce7 !important;
+  background: #e8e8dd !important;
 }
 
 .booking-cal-cell--in-range:hover {
-  background: #bbf7d0 !important;
+  background: #dce3d1 !important;
 }
 
 /* Date number */
 .booking-cal-date {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #6b7280;
-  padding: 0.15rem 0.35rem;
+  padding: 0.2rem 0.4rem;
   line-height: 1;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.3rem;
 }
 
 .booking-cal-date--today {
-  background: #3d5a3e;
+  background: #6b7564;
   color: white;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  font-size: 0.75rem;
+  width: 28px;
+  height: 28px;
+  font-size: 0.82rem;
 }
 
 .booking-cal-date--selected {
   background: white !important;
-  color: #3d5a3e !important;
+  color: #6b7564 !important;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  font-size: 0.75rem;
+  width: 28px;
+  height: 28px;
+  font-size: 0.82rem;
   font-weight: 800;
 }
 
@@ -394,8 +407,8 @@
   }
 
   .booking-cal-cell {
-    min-height: 70px;
-    padding: 0.25rem;
+    min-height: 82px;
+    padding: 0.3rem;
   }
 
   .booking-cal-event {
@@ -404,7 +417,7 @@
   }
 
   .booking-cal-date {
-    font-size: 0.7rem;
+    font-size: 0.78rem;
   }
 
   .booking-cal-selection-hint {
@@ -414,7 +427,7 @@
 
 @media (max-width: 480px) {
   .booking-cal-cell {
-    min-height: 55px;
+    min-height: 64px;
     padding: 0.2rem;
   }
 
@@ -428,19 +441,19 @@
   }
 
   .booking-cal-date {
-    font-size: 0.62rem;
+    font-size: 0.68rem;
   }
 
   .booking-cal-date--today {
-    width: 20px;
-    height: 20px;
-    font-size: 0.62rem;
+    width: 22px;
+    height: 22px;
+    font-size: 0.68rem;
   }
 
   .booking-cal-date--selected {
-    width: 20px;
-    height: 20px;
-    font-size: 0.62rem;
+    width: 22px;
+    height: 22px;
+    font-size: 0.68rem;
   }
 
   .booking-cal-selection-hint {
