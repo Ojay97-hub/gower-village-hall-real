@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { useEvents } from '../../context/EventContext';
 
 interface Booking {
   id: string;
@@ -11,13 +12,19 @@ interface Booking {
   status: 'pending' | 'confirmed' | 'declined';
 }
 
+interface CalendarEventItem {
+  id: string;
+  title: string;
+  type: 'event' | 'activity';
+}
+
 interface BookingCalendarProps {
   selectedDate?: string;
   selectedEndDate?: string;
   onDateSelect?: (date: string, endDate: string) => void;
 }
 
-// Session-based colour coding
+// Session-based colour coding for confirmed bookings
 const SESSION_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
   morning:   { bg: '#fef3c7', text: '#78350f', border: '#f59e0b', label: 'Morning' },
   afternoon: { bg: '#e0f2fe', text: '#0c4a6e', border: '#38bdf8', label: 'Afternoon' },
@@ -25,6 +32,12 @@ const SESSION_COLORS: Record<string, { bg: string; text: string; border: string;
   allday:    { bg: '#dcfce7', text: '#14532d', border: '#4ade80', label: 'All Day' },
   multi:     { bg: '#fce7f3', text: '#831843', border: '#f472b6', label: 'Multi-session' },
   unknown:   { bg: '#f1f5f9', text: '#334155', border: '#94a3b8', label: 'Booked' },
+};
+
+// Colours for scheduled events and recurring activities
+const SCHEDULE_COLORS = {
+  event:    { bg: '#eff6ff', text: '#1e40af', border: '#3b82f6', label: 'Event' },
+  activity: { bg: '#f0fdf4', text: '#166534', border: '#22c55e', label: 'Activity' },
 };
 
 function getSessionColor(eventType: string | null) {
@@ -53,6 +66,62 @@ function getSessionTag(eventType: string | null): string {
   return parts.join(' · ');
 }
 
+// Recurring-schedule helpers (mirrored from ActivityCalendar)
+const DOW_MAP: Record<string, number> = {
+  sunday: 0, sundays: 0,
+  monday: 1, mondays: 1,
+  tuesday: 2, tuesdays: 2,
+  wednesday: 3, wednesdays: 3,
+  thursday: 4, thursdays: 4,
+  friday: 5, fridays: 5,
+  saturday: 6, saturdays: 6,
+};
+
+const ORDINAL_MAP: Record<string, number> = {
+  first: 1, '1st': 1,
+  second: 2, '2nd': 2,
+  third: 3, '3rd': 3,
+  fourth: 4, '4th': 4,
+  last: -1,
+};
+
+function getDowOccurrences(year: number, month: number, dow: number): Date[] {
+  const dates: Date[] = [];
+  const d = new Date(year, month, 1);
+  while (d.getDay() !== dow) d.setDate(d.getDate() + 1);
+  while (d.getMonth() === month) {
+    dates.push(new Date(d));
+    d.setDate(d.getDate() + 7);
+  }
+  return dates;
+}
+
+function generateRecurringDates(schedule: string, year: number, month: number): Date[] {
+  const lower = schedule.toLowerCase();
+
+  for (const [ord, ordNum] of Object.entries(ORDINAL_MAP)) {
+    if (lower.includes(ord)) {
+      for (const [dayWord, dow] of Object.entries(DOW_MAP)) {
+        if (lower.includes(dayWord)) {
+          const occurrences = getDowOccurrences(year, month, dow);
+          const date = ordNum === -1
+            ? occurrences[occurrences.length - 1]
+            : occurrences[ordNum - 1];
+          return date ? [date] : [];
+        }
+      }
+    }
+  }
+
+  for (const [dayWord, dow] of Object.entries(DOW_MAP)) {
+    if (lower.includes(dayWord)) {
+      return getDowOccurrences(year, month, dow);
+    }
+  }
+
+  return [];
+}
+
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function getDaysInMonth(year: number, month: number): number {
@@ -61,7 +130,6 @@ function getDaysInMonth(year: number, month: number): number {
 
 function getFirstDayOfMonth(year: number, month: number): number {
   const day = new Date(year, month, 1).getDay();
-  // Convert Sunday=0 to Monday-based (Mon=0, Sun=6)
   return day === 0 ? 6 : day - 1;
 }
 
@@ -79,9 +147,9 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
   const [currentDate, setCurrentDate] = useState(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Internal selection state: first click = start, second click = end (or new start)
   const [selectingEnd, setSelectingEnd] = useState(false);
+
+  const { events, regularActivities } = useEvents();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -95,7 +163,6 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
     const monthStart = formatDate(year, month, 1);
     const monthEnd = formatDate(year, month, getDaysInMonth(year, month));
 
-    // Fetch bookings whose date range overlaps with this month
     const { data, error } = await supabase
       .from('bookings')
       .select('id, name, event_type, date, end_date, status')
@@ -129,17 +196,33 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
     return map;
   }, [bookings]);
 
-  const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  // Build a date→events+activities map for the displayed month
+  const calendarEventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEventItem[]>();
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
+    events.forEach(event => {
+      const dateKey = (event.date as string).slice(0, 10);
+      map.set(dateKey, [...(map.get(dateKey) || []), { id: event.id, title: event.title, type: 'event' }]);
+    });
 
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
+    regularActivities.forEach(activity => {
+      if (activity.schedule_date) {
+        const dateKey = (activity.schedule_date as string).slice(0, 10);
+        map.set(dateKey, [...(map.get(dateKey) || []), { id: activity.id, title: activity.title, type: 'activity' }]);
+      } else if (activity.schedule) {
+        generateRecurringDates(activity.schedule, year, month).forEach((date, idx) => {
+          const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          map.set(dateKey, [...(map.get(dateKey) || []), { id: `${activity.id}-${idx}`, title: activity.title, type: 'activity' }]);
+        });
+      }
+    });
+
+    return map;
+  }, [events, regularActivities, year, month]);
+
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const goToToday  = () => setCurrentDate(new Date());
 
   const isAllDayBooked = (dateKey: string) =>
     (bookingsByDate.get(dateKey) || []).some(({ booking }) => {
@@ -149,29 +232,21 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
 
   const handleDayClick = (day: number) => {
     if (!onDateSelect) return;
-
     const clickedDate = formatDate(year, month, day);
     const today = new Date();
     const clickedDateObj = new Date(year, month, day);
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-    // Don't allow selecting past dates
     if (clickedDateObj < todayStart) return;
-
-    // Don't allow selecting fully booked (all-day) dates
     if (isAllDayBooked(clickedDate)) return;
 
     if (!selectingEnd || !selectedDate) {
-      // First click: set start date, clear end date
       onDateSelect(clickedDate, '');
       setSelectingEnd(true);
     } else {
-      // Second click: set end date (if after start) or new start date
       if (clickedDate > selectedDate) {
         onDateSelect(selectedDate, clickedDate);
         setSelectingEnd(false);
       } else {
-        // Clicked before start date, reset to new start
         onDateSelect(clickedDate, '');
         setSelectingEnd(true);
       }
@@ -182,37 +257,19 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
   const firstDay = getFirstDayOfMonth(year, month);
   const monthName = currentDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
-  // Build calendar grid
   const calendarDays: (number | null)[] = [];
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push(null);
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    calendarDays.push(d);
-  }
-  while (calendarDays.length % 7 !== 0) {
-    calendarDays.push(null);
-  }
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d);
+  while (calendarDays.length % 7 !== 0) calendarDays.push(null);
 
   const today = new Date();
-  const isToday = (day: number) =>
-    day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-
-  // Check if a date is in the selected range
-  const isSelected = (day: number) => {
-    const dateKey = formatDate(year, month, day);
-    return dateKey === selectedDate;
-  };
-
-  const isEndSelected = (day: number) => {
-    const dateKey = formatDate(year, month, day);
-    return dateKey === selectedEndDate;
-  };
-
-  const isInRange = (day: number) => {
+  const isToday      = (day: number) => day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+  const isSelected   = (day: number) => formatDate(year, month, day) === selectedDate;
+  const isEndSelected= (day: number) => formatDate(year, month, day) === selectedEndDate;
+  const isInRange    = (day: number) => {
     if (!selectedDate || !selectedEndDate) return false;
-    const dateKey = formatDate(year, month, day);
-    return dateKey > selectedDate && dateKey < selectedEndDate;
+    const k = formatDate(year, month, day);
+    return k > selectedDate && k < selectedEndDate;
   };
 
   return (
@@ -221,24 +278,11 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
       <div className="booking-cal-header">
         <h3 className="booking-cal-month">{monthName}</h3>
         <div className="booking-cal-nav">
-          <button
-            onClick={prevMonth}
-            className="booking-cal-nav-btn"
-            aria-label="Previous month"
-          >
+          <button onClick={prevMonth} className="booking-cal-nav-btn" aria-label="Previous month">
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <button
-            onClick={goToToday}
-            className="booking-cal-today-btn"
-          >
-            Today
-          </button>
-          <button
-            onClick={nextMonth}
-            className="booking-cal-nav-btn"
-            aria-label="Next month"
-          >
+          <button onClick={goToToday} className="booking-cal-today-btn">Today</button>
+          <button onClick={nextMonth} className="booking-cal-nav-btn" aria-label="Next month">
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
@@ -258,13 +302,7 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
           {selectedDate && selectedEndDate && (
             <span className="booking-cal-selection-hint">
               <strong>{formatDateDisplay(selectedDate)}</strong> → <strong>{formatDateDisplay(selectedEndDate)}</strong>
-              <button
-                className="booking-cal-clear-btn"
-                onClick={() => {
-                  onDateSelect('', '');
-                  setSelectingEnd(false);
-                }}
-              >
+              <button className="booking-cal-clear-btn" onClick={() => { onDateSelect('', ''); setSelectingEnd(false); }}>
                 Clear
               </button>
             </span>
@@ -272,13 +310,7 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
           {selectedDate && !selectedEndDate && !selectingEnd && (
             <span className="booking-cal-selection-hint">
               <strong>{formatDateDisplay(selectedDate)}</strong>
-              <button
-                className="booking-cal-clear-btn"
-                onClick={() => {
-                  onDateSelect('', '');
-                  setSelectingEnd(false);
-                }}
-              >
+              <button className="booking-cal-clear-btn" onClick={() => { onDateSelect('', ''); setSelectingEnd(false); }}>
                 Clear
               </button>
             </span>
@@ -289,9 +321,7 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
       {/* Day headers */}
       <div className="booking-cal-day-headers">
         {DAYS_OF_WEEK.map(day => (
-          <div key={day} className="booking-cal-day-header">
-            {day}
-          </div>
+          <div key={day} className="booking-cal-day-header">{day}</div>
         ))}
       </div>
 
@@ -309,6 +339,9 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
 
           const dateKey = formatDate(year, month, day);
           const dayBookings = bookingsByDate.get(dateKey) || [];
+          const dayEventItems = calendarEventsByDate.get(dateKey) || [];
+          const totalItems = dayBookings.length + dayEventItems.length;
+
           const todayHighlight = isToday(day);
           const isPast = new Date(year, month, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
           const selected = isSelected(day);
@@ -317,7 +350,6 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
           const fullyBooked = !isPast && isAllDayBooked(dateKey);
           const isClickable = onDateSelect && !isPast && !fullyBooked;
 
-          // Monday-based day-of-week (0=Mon … 6=Sun) for spanning logic
           const rawDow = new Date(year, month, day).getDay();
           const mondayDow = rawDow === 0 ? 6 : rawDow - 1;
 
@@ -332,6 +364,13 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
             fullyBooked ? 'booking-cal-cell--unavailable' : '',
           ].filter(Boolean).join(' ');
 
+          // Slots: show up to 3 items total (bookings first, then events/activities)
+          const maxShown = 3;
+          const bookingsToShow = dayBookings.slice(0, maxShown);
+          const slotsLeft = maxShown - bookingsToShow.length;
+          const eventItemsToShow = dayEventItems.slice(0, slotsLeft);
+          const overflow = totalItems - maxShown;
+
           return (
             <div
               key={dateKey}
@@ -342,22 +381,23 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
                 {day}
               </span>
               <div className="booking-cal-events">
-                {dayBookings.slice(0, 3).map(({ booking, isStart, isEnd }) => {
+                {/* Confirmed bookings */}
+                {bookingsToShow.map(({ booking, isStart, isEnd }) => {
                   const color = getSessionColor(booking.event_type);
                   const sessionTag = getSessionTag(booking.event_type);
                   const isMulti = !!(booking.end_date && booking.end_date !== booking.date);
                   const isFirstInRow = !isMulti || isStart || mondayDow === 0;
-                  const isLastInRow = !isMulti || isEnd || mondayDow === 6;
-                  const extendsLeft = isMulti && !isFirstInRow;
+                  const isLastInRow  = !isMulti || isEnd   || mondayDow === 6;
+                  const extendsLeft  = isMulti && !isFirstInRow;
                   const extendsRight = isMulti && !isLastInRow;
 
                   const cls = [
                     'booking-cal-event',
                     isMulti ? 'booking-cal-event--multi' : '',
-                    extendsLeft ? 'booking-cal-event--extends-left' : '',
+                    extendsLeft  ? 'booking-cal-event--extends-left'  : '',
                     extendsRight ? 'booking-cal-event--extends-right' : '',
                     isMulti && isFirstInRow ? 'booking-cal-event--row-start' : '',
-                    isMulti && isLastInRow ? 'booking-cal-event--row-end' : '',
+                    isMulti && isLastInRow  ? 'booking-cal-event--row-end'   : '',
                   ].filter(Boolean).join(' ');
 
                   return (
@@ -374,9 +414,7 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
                       {isFirstInRow ? (
                         <>
                           <span className="booking-cal-event-name">{booking.name}</span>
-                          {sessionTag && (
-                            <span className="booking-cal-event-session">{sessionTag}</span>
-                          )}
+                          {sessionTag && <span className="booking-cal-event-session">{sessionTag}</span>}
                         </>
                       ) : (
                         <span className="booking-cal-event-name">&nbsp;</span>
@@ -384,8 +422,28 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
                     </div>
                   );
                 })}
-                {dayBookings.length > 3 && (
-                  <span className="booking-cal-more">+{dayBookings.length - 3} more</span>
+
+                {/* Scheduled events & activities */}
+                {eventItemsToShow.map((item) => {
+                  const color = SCHEDULE_COLORS[item.type];
+                  return (
+                    <div
+                      key={`${item.type}-${item.id}`}
+                      className="booking-cal-event booking-cal-event--scheduled"
+                      style={{
+                        backgroundColor: color.bg,
+                        color: color.text,
+                        borderLeft: `3px solid ${color.border}`,
+                      }}
+                      title={`${color.label}: ${item.title}`}
+                    >
+                      <span className="booking-cal-event-name">{item.title}</span>
+                    </div>
+                  );
+                })}
+
+                {overflow > 0 && (
+                  <span className="booking-cal-more">+{overflow} more</span>
                 )}
               </div>
             </div>
@@ -407,8 +465,18 @@ export function BookingCalendar({ selectedDate, selectedEndDate, onDateSelect }:
                 {c.label}
               </span>
             ))}
+          {(Object.entries(SCHEDULE_COLORS) as [string, typeof SCHEDULE_COLORS[keyof typeof SCHEDULE_COLORS]][])
+            .map(([key, c]) => (
+              <span
+                key={key}
+                className="booking-cal-legend-chip"
+                style={{ background: c.bg, color: c.text, borderColor: c.border }}
+              >
+                {c.label}
+              </span>
+            ))}
         </div>
-        <span className="booking-cal-legend-text">Confirmed bookings only</span>
+        <span className="booking-cal-legend-text">Confirmed bookings · scheduled events &amp; activities</span>
       </div>
     </div>
   );
