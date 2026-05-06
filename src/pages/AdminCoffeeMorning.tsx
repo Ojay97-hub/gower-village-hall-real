@@ -1,15 +1,40 @@
-import { useState } from "react";
-import { Plus, Edit2, Trash2, Search, ExternalLink, Image as ImageIcon, Coffee } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Edit2, Trash2, Search, ExternalLink, Image as ImageIcon, Coffee, Megaphone, Save, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCoffeeMorning, CoffeeMorningUpdate } from "../context/CoffeeMorningContext";
 import { CoffeeMorningUpdateForm } from "../components/CoffeeMorningUpdateForm";
 
 export function AdminCoffeeMorning() {
-    const { updates, loading, error, createUpdate, updateUpdate, deleteUpdate, uploadHeroImage } = useCoffeeMorning();
+    const { updates, loading, error, createUpdate, updateUpdate, deleteUpdate, uploadHeroImage, announcement, announcementLoading, saveAnnouncement } = useCoffeeMorning();
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<"All" | "Published" | "Draft">("All");
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingUpdate, setEditingUpdate] = useState<CoffeeMorningUpdate | undefined>(undefined);
+
+    const [annTitle, setAnnTitle] = useState("");
+    const [annMessage, setAnnMessage] = useState("");
+    const [annActive, setAnnActive] = useState(false);
+    const [annSaving, setAnnSaving] = useState(false);
+    const [annSaved, setAnnSaved] = useState(false);
+
+    useEffect(() => {
+        if (!announcementLoading) {
+            setAnnTitle(announcement?.title ?? "");
+            setAnnMessage(announcement?.message ?? "");
+            setAnnActive(announcement?.is_active ?? false);
+        }
+    }, [announcement, announcementLoading]);
+
+    const handleSaveAnnouncement = async () => {
+        setAnnSaving(true);
+        try {
+            await saveAnnouncement({ title: annTitle, message: annMessage, is_active: annActive });
+            setAnnSaved(true);
+            setTimeout(() => setAnnSaved(false), 2500);
+        } finally {
+            setAnnSaving(false);
+        }
+    };
 
     const filtered = updates.filter(u => {
         const matchesSearch =
@@ -88,6 +113,71 @@ export function AdminCoffeeMorning() {
                     <Plus className="w-5 h-5" />
                     New Update
                 </button>
+            </div>
+
+            {/* Announcement editor */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <Megaphone className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-base font-semibold text-gray-900">Announcement</h2>
+                            <p className="text-xs text-gray-500">Displayed at the top of the coffee mornings page when active</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setAnnActive(v => !v)}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                            annActive
+                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                    >
+                        {annActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        {annActive ? 'Active' : 'Hidden'}
+                    </button>
+                </div>
+                <div className="space-y-3">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                        <input
+                            type="text"
+                            value={annTitle}
+                            onChange={e => setAnnTitle(e.target.value)}
+                            placeholder="e.g. Next coffee morning – theme change!"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Message</label>
+                        <textarea
+                            value={annMessage}
+                            onChange={e => setAnnMessage(e.target.value)}
+                            placeholder="Add any details about the upcoming coffee morning..."
+                            rows={3}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-primary-500 outline-none transition-all resize-none"
+                        />
+                    </div>
+                </div>
+                <div className="flex items-center justify-end gap-3 mt-4">
+                    {annSaved && (
+                        <span className="text-sm text-emerald-600 font-medium animate-in fade-in duration-200">Saved!</span>
+                    )}
+                    <button
+                        onClick={handleSaveAnnouncement}
+                        disabled={annSaving}
+                        className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
+                    >
+                        {annSaving ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <Save className="w-4 h-4" />
+                        )}
+                        Save announcement
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-4 mb-6">

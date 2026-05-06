@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
-import { Lock, Mail, AlertCircle, Loader2, User as UserIcon, ArrowLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Loader2, User as UserIcon, ArrowLeft, ChevronRight, CheckCircle, MailCheck } from 'lucide-react';
 
 type AdminUser = { id: string; email: string; name: string; initials: string };
 
@@ -31,7 +31,7 @@ function getErrorMessage(error: Error): string {
 }
 
 export function AdminLogin() {
-    type LoginStep = 'select-user' | 'enter-password' | 'manual-login' | 'set-password';
+    type LoginStep = 'select-user' | 'enter-password' | 'manual-login' | 'set-password' | 'forgot-password';
 
     // Detect invite/recovery flow. The flag is set in main.tsx before any lazy-loading
     // happens, because by the time this component mounts Supabase may have already
@@ -40,6 +40,15 @@ export function AdminLogin() {
         const flag = sessionStorage.getItem('supabase_invite_flow') === '1';
         if (flag) sessionStorage.removeItem('supabase_invite_flow'); // consume it
         return flag;
+    });
+
+    const [isRecoveryFlow, setIsRecoveryFlow] = useState(() => {
+        const fromSession = sessionStorage.getItem('supabase_recovery_flow') === '1';
+        // localStorage persists across tabs (email links open in new tabs)
+        const fromLocal = localStorage.getItem('supabase_pending_recovery') === '1';
+        if (fromSession) sessionStorage.removeItem('supabase_recovery_flow');
+        if (fromLocal) localStorage.removeItem('supabase_pending_recovery');
+        return fromSession || fromLocal;
     });
 
     const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -54,6 +63,9 @@ export function AdminLogin() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [settingPassword, setSettingPassword] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
     const [rememberMe, setRememberMe] = useState(() => {
         return localStorage.getItem('admin_remember_me') === 'true';
     });
@@ -98,21 +110,33 @@ export function AdminLogin() {
         loadAdminUsers();
     }, []);
 
-    // Auto-redirect if already authenticated; for invite flow, prompt password setup first
+    // Listen for Supabase PASSWORD_RECOVERY event as a reliable fallback
+    // (the event fires even if the URL-based flag was missed due to timing)
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                setIsRecoveryFlow(true);
+                setStep('set-password');
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, []);
+
+    // Auto-redirect if already authenticated; for invite/recovery flow, prompt password setup first
     useEffect(() => {
         if (!isLoading && isAdmin) {
-            if (isInviteFlow && step !== 'set-password') {
+            if ((isInviteFlow || isRecoveryFlow) && step !== 'set-password') {
                 setStep('set-password');
-            } else if (!isInviteFlow) {
+            } else if (!isInviteFlow && !isRecoveryFlow) {
                 navigate(from, { replace: true });
             }
         }
-    }, [isAdmin, isLoading, navigate, from, isInviteFlow, step]);
+    }, [isAdmin, isLoading, navigate, from, isInviteFlow, isRecoveryFlow, step]);
 
     const handleSetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-        if (!displayName.trim()) {
+        if (!isRecoveryFlow && !displayName.trim()) {
             setError('Please enter your name.');
             return;
         }
@@ -125,10 +149,11 @@ export function AdminLogin() {
             return;
         }
         setSettingPassword(true);
-        const { error: updateError } = await supabase.auth.updateUser({
-            password: newPassword,
-            data: { name: displayName.trim() }
-        });
+        const updatePayload: Parameters<typeof supabase.auth.updateUser>[0] = { password: newPassword };
+        if (!isRecoveryFlow && displayName.trim()) {
+            updatePayload.data = { name: displayName.trim() };
+        }
+        const { error: updateError } = await supabase.auth.updateUser(updatePayload);
         setSettingPassword(false);
         if (updateError) {
             setError(updateError.message);
@@ -175,6 +200,31 @@ export function AdminLogin() {
         setSelectedUser(null);
         setError(null);
         setPassword('');
+    };
+
+    const handleOpenForgotPassword = () => {
+        setResetEmail(selectedUser?.email ?? email);
+        setResetSent(false);
+        setError(null);
+        setStep('forgot-password');
+    };
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setResetLoading(true);
+        // Use localStorage so the flag survives across tabs (email links open in a new tab)
+        localStorage.setItem('supabase_pending_recovery', '1');
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+            redirectTo: `${window.location.origin}/admin/login`,
+        });
+        setResetLoading(false);
+        if (resetError) {
+            sessionStorage.removeItem('supabase_pending_recovery');
+            setError(resetError.message);
+        } else {
+            setResetSent(true);
+        }
     };
 
     // Show nothing while checking session (avoids flash)
@@ -343,19 +393,28 @@ export function AdminLogin() {
                                         />
                                     </div>
 
-                                    <div className="flex items-center gap-2 pt-2">
-                                        <input
-                                            id="remember-me"
-                                            name="remember-me"
-                                            type="checkbox"
-                                            checked={rememberMe}
-                                            onChange={(e) => setRememberMe(e.target.checked)}
-                                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                                            disabled={loading}
-                                        />
-                                        <label htmlFor="remember-me" className="text-sm text-gray-600 cursor-pointer select-none">
-                                            Keep me signed in
-                                        </label>
+                                    <div className="flex items-center justify-between pt-2">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                id="remember-me"
+                                                name="remember-me"
+                                                type="checkbox"
+                                                checked={rememberMe}
+                                                onChange={(e) => setRememberMe(e.target.checked)}
+                                                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                                disabled={loading}
+                                            />
+                                            <label htmlFor="remember-me" className="text-sm text-gray-600 cursor-pointer select-none">
+                                                Keep me signed in
+                                            </label>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenForgotPassword}
+                                            className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                                        >
+                                            Forgot password?
+                                        </button>
                                     </div>
                                 </div>
 
@@ -377,16 +436,99 @@ export function AdminLogin() {
                         </div>
                     )}
 
+                    {/* View: Forgot Password */}
+                    {step === 'forgot-password' && (
+                        <div className="p-8 pt-6">
+                            <button
+                                type="button"
+                                onClick={() => setStep(selectedUser ? 'enter-password' : 'manual-login')}
+                                className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition-colors"
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-1" />
+                                Back
+                            </button>
+
+                            {resetSent ? (
+                                <div className="text-center py-4">
+                                    <MailCheck className="h-12 w-12 text-primary-600 mx-auto mb-4" />
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Check your inbox</h3>
+                                    <p className="text-sm text-gray-500 leading-relaxed">
+                                        We've sent a password reset link to{' '}
+                                        <span className="font-medium text-gray-700">{resetEmail}</span>.
+                                        Follow the link in the email to set a new password.
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-4">Didn't receive it? Check your spam folder.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="text-center mb-8 mt-4">
+                                        <h3 className="text-xl font-bold text-gray-900">Reset Password</h3>
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            We'll send a reset link to your email address.
+                                        </p>
+                                    </div>
+
+                                    <form onSubmit={handleForgotPassword}>
+                                        {error && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 mb-6 animate-in fade-in slide-in-from-top-2">
+                                                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                                <p className="text-sm text-red-600">{error}</p>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Mail className="h-4 w-4 text-gray-500" />
+                                                <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700">
+                                                    Email address
+                                                </label>
+                                            </div>
+                                            <input
+                                                id="reset-email"
+                                                type="email"
+                                                autoComplete="email"
+                                                required
+                                                autoFocus
+                                                value={resetEmail}
+                                                onChange={(e) => setResetEmail(e.target.value)}
+                                                className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                                                placeholder="admin@example.com"
+                                                disabled={resetLoading}
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={resetLoading || !resetEmail}
+                                            className="w-full mt-6 flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+                                        >
+                                            {resetLoading ? (
+                                                <>
+                                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                                    Sending…
+                                                </>
+                                            ) : (
+                                                'Send reset link'
+                                            )}
+                                        </button>
+                                    </form>
+                                </>
+                            )}
+                        </div>
+                    )}
+
                     {/* View: Set Password (invite / recovery flow) */}
                     {step === 'set-password' && (
                         <div className="p-8 pt-10">
                             <div className="text-center mb-8">
                                 <CheckCircle className="h-12 w-12 text-primary-600 mx-auto mb-4" />
                                 <h3 className="text-xl font-bold text-gray-900">
-                                    Welcome to the team!
+                                    {isRecoveryFlow ? 'Set a new password' : 'Welcome to the team!'}
                                 </h3>
                                 <p className="text-sm text-gray-500 mt-2">
-                                    Set a password to complete your admin account setup.
+                                    {isRecoveryFlow
+                                        ? 'Choose a new password for your admin account.'
+                                        : 'Set a password to complete your admin account setup.'}
                                 </p>
                             </div>
 
@@ -398,26 +540,28 @@ export function AdminLogin() {
                                     </div>
                                 )}
 
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <UserIcon className="h-4 w-4 text-gray-500" />
-                                        <label htmlFor="display-name" className="block text-sm font-medium text-gray-700">
-                                            Your Name
-                                        </label>
+                                {!isRecoveryFlow && (
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <UserIcon className="h-4 w-4 text-gray-500" />
+                                            <label htmlFor="display-name" className="block text-sm font-medium text-gray-700">
+                                                Your Name
+                                            </label>
+                                        </div>
+                                        <input
+                                            id="display-name"
+                                            type="text"
+                                            autoComplete="name"
+                                            required
+                                            autoFocus
+                                            value={displayName}
+                                            onChange={(e) => setDisplayName(e.target.value)}
+                                            className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                                            placeholder="e.g. Claire Cotter"
+                                            disabled={settingPassword}
+                                        />
                                     </div>
-                                    <input
-                                        id="display-name"
-                                        type="text"
-                                        autoComplete="name"
-                                        required
-                                        autoFocus
-                                        value={displayName}
-                                        onChange={(e) => setDisplayName(e.target.value)}
-                                        className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                                        placeholder="e.g. Claire Cotter"
-                                        disabled={settingPassword}
-                                    />
-                                </div>
+                                )}
 
                                 <div>
                                     <div className="flex items-center gap-2 mb-2">

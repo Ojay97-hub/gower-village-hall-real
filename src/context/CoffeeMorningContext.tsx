@@ -2,6 +2,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 
+export type CoffeeMorningAnnouncement = {
+    id: string;
+    title: string;
+    message: string;
+    is_active: boolean;
+    updated_at: string;
+    updated_by: string | null;
+};
+
 export type CoffeeMorningUpdate = {
     id: string;
     created_at: string;
@@ -29,6 +38,9 @@ type CoffeeMorningContextType = {
     updateUpdate: (id: string, updates: Partial<CoffeeMorningUpdate>) => Promise<void>;
     deleteUpdate: (id: string, imageUrl?: string | null) => Promise<void>;
     uploadHeroImage: (file: File) => Promise<string>;
+    announcement: CoffeeMorningAnnouncement | null;
+    announcementLoading: boolean;
+    saveAnnouncement: (data: { title: string; message: string; is_active: boolean }) => Promise<void>;
 };
 
 const CoffeeMorningContext = createContext<CoffeeMorningContextType | undefined>(undefined);
@@ -39,6 +51,8 @@ export function CoffeeMorningProvider({ children }: { children: React.ReactNode 
     const [updates, setUpdates] = useState<CoffeeMorningUpdate[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [announcement, setAnnouncement] = useState<CoffeeMorningAnnouncement | null>(null);
+    const [announcementLoading, setAnnouncementLoading] = useState(true);
     const { isAdmin, isAuthenticated } = useAuth();
 
     const refreshUpdates = async (opts?: { includeDrafts?: boolean }) => {
@@ -152,9 +166,49 @@ export function CoffeeMorningProvider({ children }: { children: React.ReactNode 
         }
     };
 
+    const refreshAnnouncement = async () => {
+        try {
+            setAnnouncementLoading(true);
+            const { data, error } = await supabase
+                .from('coffee_morning_announcement')
+                .select('*')
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (error) throw error;
+            setAnnouncement(data as CoffeeMorningAnnouncement | null);
+        } catch (err) {
+            console.error('Error fetching coffee morning announcement:', err);
+        } finally {
+            setAnnouncementLoading(false);
+        }
+    };
+
+    const saveAnnouncement = async (data: { title: string; message: string; is_active: boolean }) => {
+        try {
+            if (announcement) {
+                const { error } = await supabase
+                    .from('coffee_morning_announcement')
+                    .update(data)
+                    .eq('id', announcement.id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('coffee_morning_announcement')
+                    .insert([data]);
+                if (error) throw error;
+            }
+            await refreshAnnouncement();
+        } catch (err) {
+            console.error('Error saving coffee morning announcement:', err);
+            throw err;
+        }
+    };
+
     useEffect(() => {
         const timer = setTimeout(() => {
             refreshUpdates({ includeDrafts: isAdmin });
+            refreshAnnouncement();
         }, 50);
         return () => clearTimeout(timer);
     }, [isAdmin, isAuthenticated]);
@@ -170,6 +224,9 @@ export function CoffeeMorningProvider({ children }: { children: React.ReactNode 
                 updateUpdate,
                 deleteUpdate,
                 uploadHeroImage,
+                announcement,
+                announcementLoading,
+                saveAnnouncement,
             }}
         >
             {children}

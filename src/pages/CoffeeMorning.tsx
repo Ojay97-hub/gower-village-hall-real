@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Coffee, Clock, CalendarDays, Users, Plus, Edit2, Trash2, AlertTriangle, X, Heart, ArrowRight, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Coffee, Clock, CalendarDays, Users, Plus, Edit2, Trash2, AlertTriangle, X, Heart, ArrowRight, Settings, ChevronLeft, ChevronRight, Megaphone } from 'lucide-react';
 import { useGallery, GalleryImage } from '../context/GalleryContext';
 import { useAuth } from '../context/AuthContext';
 import { useCoffeeMorning } from '../context/CoffeeMorningContext';
@@ -84,7 +84,7 @@ function useCountdown(target: Date) {
 
 export function CoffeeMorning() {
   const { galleryImages, loading: galleryLoading, deleteGalleryImage, reorderGalleryImages } = useGallery();
-  const { updates, loading: updatesLoading } = useCoffeeMorning();
+  const { updates, loading: updatesLoading, announcement } = useCoffeeMorning();
   const { isAdmin, hasRole } = useAuth();
   const navigate = useNavigate();
 
@@ -242,6 +242,23 @@ export function CoffeeMorning() {
           </div>
         </div>
       </section>
+
+      {/* Announcement */}
+      {announcement?.is_active && (announcement.title || announcement.message) && (
+        <section className="py-6 bg-amber-50 border-b border-amber-100">
+          <div className="max-w-3xl mx-auto px-4 text-center">
+            <div className="inline-flex items-center justify-center w-9 h-9 bg-amber-100 rounded-xl mb-3">
+              <Megaphone className="w-5 h-5 text-amber-600" />
+            </div>
+            {announcement.title && (
+              <p className="font-semibold text-amber-900 mb-1">{announcement.title}</p>
+            )}
+            {announcement.message && (
+              <p className="text-sm text-amber-800 leading-relaxed">{announcement.message}</p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Details */}
       <section className="py-12 border-b border-gray-100">

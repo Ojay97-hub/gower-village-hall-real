@@ -55,7 +55,40 @@ create policy "Admins can delete coffee morning updates"
   using (exists (select 1 from public.admin_users where user_id = auth.uid()));
 
 
--- 2. Storage: coffee-morning-images bucket
+-- 2. Coffee Morning Announcement table (single-row, upserted by admins)
+-- --------------------------------------------------------
+create table if not exists public.coffee_morning_announcement (
+  id uuid primary key default gen_random_uuid(),
+  title text not null default '',
+  message text not null default '',
+  is_active boolean not null default false,
+  updated_at timestamptz not null default now(),
+  updated_by uuid null default auth.uid()
+);
+
+alter table public.coffee_morning_announcement enable row level security;
+
+create trigger coffee_morning_announcement_updated_at
+  before update on public.coffee_morning_announcement
+  for each row execute function public.set_updated_at();
+
+-- Anyone can read the announcement
+create policy "Public can read coffee morning announcement"
+  on public.coffee_morning_announcement for select
+  using (true);
+
+-- Admins can insert
+create policy "Admins can insert coffee morning announcement"
+  on public.coffee_morning_announcement for insert
+  with check (exists (select 1 from public.admin_users where user_id = auth.uid()));
+
+-- Admins can update
+create policy "Admins can update coffee morning announcement"
+  on public.coffee_morning_announcement for update
+  using (exists (select 1 from public.admin_users where user_id = auth.uid()));
+
+
+-- 3. Storage: coffee-morning-images bucket
 -- --------------------------------------------------------
 -- Create the bucket via Supabase Dashboard > Storage > New Bucket:
 --   Name: coffee-morning-images
