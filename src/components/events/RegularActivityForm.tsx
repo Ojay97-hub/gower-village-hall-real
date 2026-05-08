@@ -25,6 +25,7 @@ export function RegularActivityForm({ initialData, onSuccess, onCancel }: Regula
         action_type: initialData?.action_type || 'none',
         action_text: initialData?.action_text || '',
         action_link: initialData?.action_link || '',
+        is_featured: initialData?.is_featured || false,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -46,6 +47,7 @@ export function RegularActivityForm({ initialData, onSuccess, onCancel }: Regula
                 action_type: formData.action_type,
                 action_text: formData.action_type !== 'none' ? (formData.action_text || null) : null,
                 action_link: (formData.action_type === 'button' || formData.action_type === 'link') ? (formData.action_link || null) : null,
+                is_featured: formData.is_featured,
             };
 
             if (initialData) {
@@ -245,6 +247,25 @@ export function RegularActivityForm({ initialData, onSuccess, onCancel }: Regula
                         className={inputClasses}
                     />
                 </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4 mt-2">
+                <h4 className="text-sm font-semibold text-gray-900 mt-4 mb-4">Display Options</h4>
+
+                <label className="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                    <input
+                        type="checkbox"
+                        checked={formData.is_featured}
+                        onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span>
+                        <span className="block font-medium text-gray-900">Feature this activity</span>
+                        <span className="mt-1 block text-gray-600">
+                            Shows this activity as the large highlighted card above the regular activity grid.
+                        </span>
+                    </span>
+                </label>
             </div>
 
             <div className="border-t border-gray-200 pt-4 mt-2">

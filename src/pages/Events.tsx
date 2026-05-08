@@ -267,6 +267,17 @@ export function Events() {
         return timeString.substring(0, 5);
     };
 
+    const featuredActivity = useMemo(
+        () => regularActivities.find(activity => activity.is_featured)
+            || regularActivities.find(activity => activity.title.toLowerCase().includes('coffee morning')),
+        [regularActivities]
+    );
+
+    const otherActivities = useMemo(
+        () => regularActivities.filter(activity => activity.id !== featuredActivity?.id),
+        [regularActivities, featuredActivity]
+    );
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col" >
             {/* Hero Section */}
@@ -625,24 +636,122 @@ export function Events() {
                         )}
                     </div>
 
+                    {featuredActivity && (() => {
+                        const IconComponent = iconMap[featuredActivity.icon] || Coffee;
+                        const theme = colorMap[featuredActivity.color_theme] || colorMap.warm;
+                        const isCoffeeMorning = featuredActivity.title.toLowerCase().includes('coffee morning');
+                        const featuredActionText = isCoffeeMorning && (!featuredActivity.action_text || featuredActivity.action_text === 'See dates')
+                            ? 'See more'
+                            : featuredActivity.action_text;
+                        const featuredActionLink = isCoffeeMorning && (!featuredActivity.action_link || featuredActivity.action_link === '/contact')
+                            ? '/hall/coffee-morning'
+                            : featuredActivity.action_link;
+
+                        return (
+                            <div className="mb-8 overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                                <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+                                    <div className="relative p-6 sm:p-8">
+                                        <div className="absolute inset-x-0 top-0 h-1.5 bg-primary-200" />
+                                        <div className="mb-5 flex items-start gap-4">
+                                            <div
+                                                className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border shadow-sm"
+                                                style={{
+                                                    backgroundColor: theme.bgColor,
+                                                    borderColor: theme.borderColor,
+                                                    color: theme.iconTextColor
+                                                }}
+                                            >
+                                                <IconComponent className="h-6 w-6" />
+                                            </div>
+
+                                            <div className="min-w-0 flex-grow">
+                                                <h3 className="text-2xl font-bold leading-tight text-gray-900">
+                                                    {featuredActivity.title}
+                                                </h3>
+                                                <span className="mt-3 inline-flex rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-800 ring-1 ring-primary-100">
+                                                    Featured monthly event
+                                                </span>
+                                            </div>
+
+                                            {canManageEvents && (
+                                                <div className="flex flex-shrink-0 gap-2">
+                                                    <button
+                                                        onClick={() => handleActivityEdit(featuredActivity)}
+                                                        className="rounded-xl p-2 text-gray-400 transition-all duration-200 hover:bg-primary-50 hover:text-primary-600"
+                                                        title="Edit"
+                                                    >
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleActivityDeleteClick(featuredActivity)}
+                                                        className="rounded-xl p-2 text-gray-400 transition-all duration-200 hover:bg-red-50 hover:text-red-500"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {featuredActivity.description && (
+                                            <p className="max-w-3xl text-lg leading-8 text-gray-600">
+                                                {featuredActivity.description}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col justify-center gap-4 border-t border-primary-100 bg-primary-50/60 p-6 sm:p-8 lg:border-l lg:border-t-0">
+                                        <div className="flex flex-wrap gap-3">
+                                            {featuredActivity.schedule && (
+                                                <span className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary-900 shadow-sm ring-1 ring-primary-100">
+                                                    {featuredActivity.schedule}
+                                                </span>
+                                            )}
+                                            {featuredActivity.schedule_date && (
+                                                <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-primary-100">
+                                                    <Calendar className="h-4 w-4 text-primary-600" />
+                                                    {new Date(featuredActivity.schedule_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                                </span>
+                                            )}
+                                            {(featuredActivity.start_time || featuredActivity.end_time) && (
+                                                <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-primary-100">
+                                                    <Clock className="h-4 w-4 text-primary-600" />
+                                                    {formatTime(featuredActivity.start_time)}
+                                                    {featuredActivity.end_time && ` - ${formatTime(featuredActivity.end_time)}`}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="text-sm leading-6 text-gray-600">
+                                            A friendly monthly fixture at the hall, with coffee, cake, and time to catch up with neighbours.
+                                        </p>
+
+                                        {featuredActionText && featuredActionLink && (
+                                            <a
+                                                href={featuredActionLink}
+                                                className="inline-flex w-fit items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700"
+                                            >
+                                                {featuredActionText}
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {regularActivities.length === 0 ? (
                             <p className="text-gray-500 italic text-center py-8 col-span-full">No regular activities listed yet.</p>
                         ) : (
-                            regularActivities.map((activity, index) => {
+                            otherActivities.map((activity) => {
                                 const IconComponent = iconMap[activity.icon] || Coffee;
                                 const theme = colorMap[activity.color_theme] || colorMap.sage;
-
-                                // Check if this is the last item and alone in its row
-                                const totalItems = regularActivities.length;
-                                const isLastItem = index === totalItems - 1;
-                                const remainder = totalItems % 3; // Based on lg:grid-cols-3
-                                const isAloneInRow = isLastItem && remainder === 1;
 
                                 return (
                                     <div
                                         key={activity.id}
-                                        className={`rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden flex flex-col ${isAloneInRow ? 'md:col-span-2 lg:col-span-3' : 'h-full'}`}
+                                        className="rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden flex flex-col h-full"
                                     >
                                         {/* Card Content */}
                                         <div className="p-6 flex flex-col h-full">

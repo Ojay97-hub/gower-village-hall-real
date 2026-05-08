@@ -3,12 +3,9 @@ import { createPortal } from "react-dom";
 import { Users, X, CheckCircle, Loader2, Mail, Quote } from "lucide-react";
 import { ChurchCard } from "../components/church/ChurchCard";
 import { getChurchesWithRelations } from "../services/churchService";
-import { useAuth } from "../context/AuthContext";
 import type { Church } from "../types/church";
 
 export function Churches() {
-  const { isAdmin } = useAuth();
-
   const [churches, setChurches] = useState<Church[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -152,8 +149,6 @@ export function Churches() {
               imageRight={index % 2 !== 0}
               visible={cardsVisible}
               animationDelay={(index + 1) * 200}
-              isAdmin={isAdmin}
-              onRefresh={fetchChurches}
             />
           ))}
 

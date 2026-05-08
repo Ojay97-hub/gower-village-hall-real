@@ -27,6 +27,7 @@ export type RegularActivity = {
     action_type: string;
     action_text: string | null;
     action_link: string | null;
+    is_featured: boolean | null;
 };
 
 type EventContextType = {
@@ -124,6 +125,13 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
     const addRegularActivity = async (activity: Omit<RegularActivity, 'id' | 'created_at'>) => {
         try {
+            if (activity.is_featured) {
+                await supabase
+                    .from('regular_activities')
+                    .update({ is_featured: false })
+                    .eq('is_featured', true);
+            }
+
             const { error } = await supabase.from('regular_activities').insert([activity]);
             if (error) throw error;
             await fetchRegularActivities();
@@ -135,6 +143,14 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
     const updateRegularActivity = async (id: string, updates: Partial<RegularActivity>) => {
         try {
+            if (updates.is_featured) {
+                await supabase
+                    .from('regular_activities')
+                    .update({ is_featured: false })
+                    .eq('is_featured', true)
+                    .neq('id', id);
+            }
+
             const { error } = await supabase
                 .from('regular_activities')
                 .update(updates)

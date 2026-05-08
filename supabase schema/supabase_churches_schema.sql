@@ -47,6 +47,17 @@ CREATE TABLE announcements (
 );
 CREATE INDEX announcements_church_expiry_idx ON announcements (church_id, expiry_date);
 
+CREATE TABLE church_events (
+  id          UUID         DEFAULT gen_random_uuid() PRIMARY KEY,
+  church_id   UUID         NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+  title       TEXT         NOT NULL,
+  event_date  TIMESTAMPTZ  NOT NULL,
+  description TEXT,
+  location    TEXT,
+  created_at  TIMESTAMPTZ  DEFAULT NOW()
+);
+CREATE INDEX church_events_church_date_idx ON church_events (church_id, event_date);
+
 -- =============================================
 -- Row-level security
 -- =============================================
@@ -54,18 +65,21 @@ ALTER TABLE churches       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE content_blocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE church_events  ENABLE ROW LEVEL SECURITY;
 
 -- Public read
 CREATE POLICY "Public read churches"       ON churches       FOR SELECT USING (true);
 CREATE POLICY "Public read services"       ON services       FOR SELECT USING (true);
 CREATE POLICY "Public read content_blocks" ON content_blocks FOR SELECT USING (true);
 CREATE POLICY "Public read announcements"  ON announcements  FOR SELECT USING (true);
+CREATE POLICY "Public read church_events"  ON church_events  FOR SELECT USING (true);
 
 -- Authenticated write (admins are authenticated via Supabase Auth)
 CREATE POLICY "Auth write churches"       ON churches       FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Auth write services"       ON services       FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Auth write content_blocks" ON content_blocks FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Auth write announcements"  ON announcements  FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Auth write church_events"  ON church_events  FOR ALL USING (auth.role() = 'authenticated');
 
 -- =============================================
 -- Seed data — update image URLs after uploading

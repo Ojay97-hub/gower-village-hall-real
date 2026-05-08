@@ -6,7 +6,7 @@
 /*
 -- SQL to insert directly into Supabase (copy and paste into SQL Editor):
 
-INSERT INTO regular_activities (title, description, icon, schedule, color_theme, action_type, action_text, action_link)
+INSERT INTO regular_activities (title, description, icon, schedule, color_theme, action_type, action_text, action_link, is_featured)
 VALUES
   (
     'Art Classes',
@@ -16,7 +16,8 @@ VALUES
     'sage',
     'button',
     'Check schedule',
-    '/contact'
+    '/contact',
+    false
   ),
   (
     'Gower Harmony Choir',
@@ -26,7 +27,8 @@ VALUES
     'forest',
     'link',
     'Learn more',
-    '/contact'
+    '/contact',
+    false
   ),
   (
     'Village Coffee Mornings',
@@ -35,8 +37,9 @@ VALUES
     'First Saturday of every month',
     'warm',
     'button',
-    'See dates',
-    '/contact'
+    'See more',
+    '/hall/coffee-morning',
+    true
   ),
   (
     'Community Yoga',
@@ -46,7 +49,8 @@ VALUES
     'moss',
     'link',
     'Book a session',
-    '/contact'
+    '/contact',
+    false
   ),
   (
     'Book Club',
@@ -56,7 +60,8 @@ VALUES
     'olive',
     'none',
     NULL,
-    NULL
+    NULL,
+    false
   ),
   (
     'Community Group Meetings',
@@ -66,7 +71,8 @@ VALUES
     'slate',
     'button',
     'Enquire about booking',
-    '/contact'
+    '/contact',
+    false
   );
 */
 
@@ -88,6 +94,7 @@ const activities = [
     action_type: 'button',
     action_text: 'Check schedule',
     action_link: '/contact',
+    is_featured: false,
   },
   {
     title: 'Gower Harmony Choir',
@@ -98,6 +105,7 @@ const activities = [
     action_type: 'link',
     action_text: 'Learn more',
     action_link: '/contact',
+    is_featured: false,
   },
   {
     title: 'Village Coffee Mornings',
@@ -106,8 +114,9 @@ const activities = [
     schedule: 'First Saturday of every month',
     color_theme: 'warm',
     action_type: 'button',
-    action_text: 'See dates',
-    action_link: '/contact',
+    action_text: 'See more',
+    action_link: '/hall/coffee-morning',
+    is_featured: true,
   },
   {
     title: 'Community Yoga',
@@ -118,6 +127,7 @@ const activities = [
     action_type: 'link',
     action_text: 'Book a session',
     action_link: '/contact',
+    is_featured: false,
   },
   {
     title: 'Book Club',
@@ -128,6 +138,7 @@ const activities = [
     action_type: 'none',
     action_text: null,
     action_link: null,
+    is_featured: false,
   },
   {
     title: 'Community Group Meetings',
@@ -138,6 +149,7 @@ const activities = [
     action_type: 'button',
     action_text: 'Check schedule',
     action_link: '/contact',
+    is_featured: false,
   },
 ];
 

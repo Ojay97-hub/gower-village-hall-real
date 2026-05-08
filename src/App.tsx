@@ -33,7 +33,9 @@ const CoffeeMorning = lazy(() => import('./pages/CoffeeMorning').then(m => ({ de
 const CoffeeMorningArticle = lazy(() => import('./pages/CoffeeMorningArticle').then(m => ({ default: m.CoffeeMorningArticle })));
 const AdminCoffeeMorning = lazy(() => import('./pages/AdminCoffeeMorning').then(m => ({ default: m.AdminCoffeeMorning })));
 const AdminSubscribers = lazy(() => import('./pages/AdminSubscribers').then(m => ({ default: m.AdminSubscribers })));
+const AdminChurches = lazy(() => import('./pages/AdminChurches').then(m => ({ default: m.AdminChurches })));
 const ForFamilies = lazy(() => import('./pages/ForFamilies').then(m => ({ default: m.ForFamilies })));
+const ChurchPage = lazy(() => import('./pages/ChurchPage').then(m => ({ default: m.ChurchPage })));
 
 /** Reverse guard: redirects to /hall/events if already logged in */
 
@@ -61,6 +63,7 @@ export default function App() {
                     <Route path="/hall/coffee-morning/:slug" element={<CoffeeMorningArticle />} />
                     <Route path="/hall/for-families" element={<ForFamilies />} />
                     <Route path="/churches" element={<Churches />} />
+                    <Route path="/churches/:slug" element={<ChurchPage />} />
                     <Route path="/committee" element={<Committee />} />
                     <Route path="/businesses" element={<Businesses />} />
                     <Route path="/blog" element={<Blog />} />
@@ -89,6 +92,9 @@ export default function App() {
                     </Route>
                     <Route element={<AdminRoute requiredRole="newsletter" />}>
                       <Route path="/admin/subscribers" element={<AdminSubscribers />} />
+                    </Route>
+                    <Route element={<AdminRoute requiredRole="churches" />}>
+                      <Route path="/admin/churches" element={<AdminChurches />} />
                     </Route>
 
                     {/* Master Admin restricted route */}

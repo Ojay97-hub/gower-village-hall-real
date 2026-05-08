@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import type { Church, Service, Announcement } from '../types/church';
+import type { Church, Service, Announcement, ContentBlock, ChurchEvent } from '../types/church';
 
 export async function getChurchesWithRelations(): Promise<Church[]> {
   const { data, error } = await supabase
@@ -8,11 +8,28 @@ export async function getChurchesWithRelations(): Promise<Church[]> {
       *,
       services (*),
       content_blocks (*),
-      announcements (*)
+      announcements (*),
+      events:church_events (*)
     `)
     .order('name');
 
-  if (error) throw error;
+  if (error) {
+    if (error.message?.includes('church_events')) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('churches')
+        .select(`
+          *,
+          services (*),
+          content_blocks (*),
+          announcements (*)
+        `)
+        .order('name');
+
+      if (fallbackError) throw fallbackError;
+      return (fallbackData ?? []).map(church => ({ ...church, events: [] })) as Church[];
+    }
+    throw error;
+  }
   return (data ?? []) as Church[];
 }
 
@@ -23,6 +40,14 @@ export async function addService(payload: Omit<Service, 'id'>): Promise<void> {
 
 export async function deleteService(id: string): Promise<void> {
   const { error } = await supabase.from('services').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateService(
+  id: string,
+  updates: Partial<Pick<Service, 'title' | 'date_time' | 'recurring_text' | 'description'>>
+): Promise<void> {
+  const { error } = await supabase.from('services').update(updates).eq('id', id);
   if (error) throw error;
 }
 
@@ -41,5 +66,46 @@ export async function updateAnnouncement(
 
 export async function deleteAnnouncement(id: string): Promise<void> {
   const { error } = await supabase.from('announcements').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function addChurchEvent(payload: Omit<ChurchEvent, 'id'>): Promise<void> {
+  const { error } = await supabase.from('church_events').insert([payload]);
+  if (error) throw error;
+}
+
+export async function updateChurchEvent(
+  id: string,
+  updates: Partial<Pick<ChurchEvent, 'title' | 'event_date' | 'description' | 'location'>>
+): Promise<void> {
+  const { error } = await supabase.from('church_events').update(updates).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteChurchEvent(id: string): Promise<void> {
+  const { error } = await supabase.from('church_events').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateChurch(
+  id: string,
+  updates: Partial<Pick<Church, 'name' | 'description' | 'address' | 'image_url' | 'image_position'>>
+): Promise<void> {
+  const { error } = await supabase.from('churches').update(updates).eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateContentBlock(
+  id: string,
+  updates: Partial<Pick<ContentBlock, 'title' | 'content'>>
+): Promise<void> {
+  const { error } = await supabase.from('content_blocks').update(updates).eq('id', id);
+  if (error) throw error;
+}
+
+export async function addChurch(
+  payload: Pick<Church, 'name' | 'description' | 'address' | 'image_url'> & { image_position?: string | null }
+): Promise<void> {
+  const { error } = await supabase.from('churches').insert([payload]);
   if (error) throw error;
 }

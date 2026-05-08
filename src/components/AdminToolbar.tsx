@@ -72,7 +72,7 @@ export function AdminToolbar() {
             key: 'churches',
             label: 'Manage Churches',
             title: 'Manage Churches',
-            to: '/churches',
+            to: '/admin/churches',
             icon: Landmark,
             className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
         } : null,

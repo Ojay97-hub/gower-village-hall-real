@@ -22,6 +22,15 @@ export interface Announcement {
   expiry_date: string;
 }
 
+export interface ChurchEvent {
+  id: string;
+  church_id: string;
+  title: string;
+  event_date: string;
+  description?: string | null;
+  location?: string | null;
+}
+
 export interface Church {
   id: string;
   name: string;
@@ -32,4 +41,5 @@ export interface Church {
   services: Service[];
   content_blocks: ContentBlock[];
   announcements: Announcement[];
+  events: ChurchEvent[];
 }

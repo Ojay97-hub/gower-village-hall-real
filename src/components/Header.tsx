@@ -43,7 +43,15 @@ export function Header() {
         { label: "For Families", path: "/hall/for-families" }
       ]
     },
-    { label: "Churches", path: "/churches" },
+    {
+      label: "Churches",
+      path: "/churches",
+      children: [
+        { label: "Churches Overview", path: "/churches" },
+        { label: "St John's", path: "/churches/st-johns" },
+        { label: "St Nicholas", path: "/churches/st-nicholas" },
+      ]
+    },
     { label: "Committee", path: "/committee" },
     { label: "Businesses", path: "/businesses" },
     { label: "Blog", path: "/blog" },
