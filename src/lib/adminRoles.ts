@@ -35,6 +35,12 @@ export const ADMIN_ROLES = [
         description: 'Access the Manage Churches area and maintain church-related content.',
         color: 'purple',
     },
+    {
+        id: 'newsletter',
+        label: 'Newsletter',
+        description: 'Access the Manage Subscribers area to view and manage newsletter sign-ups.',
+        color: 'indigo',
+    },
 ] as const;
 
 export type AdminRole = typeof ADMIN_ROLES[number]['id'];
@@ -47,4 +53,5 @@ export const ROLE_COLORS: Record<string, { badge: string; dot: string }> = {
     amber:  { badge: 'bg-amber-50 text-amber-700 border-amber-100',  dot: 'bg-amber-400' },
     teal:   { badge: 'bg-teal-50 text-teal-700 border-teal-100',     dot: 'bg-teal-400' },
     purple: { badge: 'bg-purple-50 text-purple-700 border-purple-100', dot: 'bg-purple-400' },
+    indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-100', dot: 'bg-indigo-400' },
 };

@@ -1,4 +1,9 @@
 const nodemailer = require('nodemailer');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabaseAdmin = process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_SERVICE_ROLE_KEY)
+  : null;
 
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
@@ -57,6 +62,17 @@ module.exports = async (req, res) => {
     ? parseInt(process.env.BREVO_CHURCHES_LIST_ID, 10)
     : parseInt(process.env.BREVO_HALL_LIST_ID, 10);
 
+  const saveToSupabase = async () => {
+    if (!supabaseAdmin) return;
+    const { error } = await supabaseAdmin
+      .from('newsletter_subscribers')
+      .upsert(
+        { name: name || null, email, group_name: group || 'hall' },
+        { onConflict: 'email,group_name' }
+      );
+    if (error) console.error('Supabase insert error:', error.message);
+  };
+
   const addToBrevoList = async () => {
     if (!process.env.BREVO_API_KEY || !listId) return;
     const body = {
@@ -95,6 +111,7 @@ module.exports = async (req, res) => {
         html: confirmationHtml,
       }),
       addToBrevoList(),
+      saveToSupabase(),
     ]);
     return res.status(200).json({ success: true });
   } catch (err) {

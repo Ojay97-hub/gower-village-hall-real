@@ -32,6 +32,7 @@ const AdminCommittee = lazy(() => import('./pages/AdminCommittee').then(m => ({ 
 const CoffeeMorning = lazy(() => import('./pages/CoffeeMorning').then(m => ({ default: m.CoffeeMorning })));
 const CoffeeMorningArticle = lazy(() => import('./pages/CoffeeMorningArticle').then(m => ({ default: m.CoffeeMorningArticle })));
 const AdminCoffeeMorning = lazy(() => import('./pages/AdminCoffeeMorning').then(m => ({ default: m.AdminCoffeeMorning })));
+const AdminSubscribers = lazy(() => import('./pages/AdminSubscribers').then(m => ({ default: m.AdminSubscribers })));
 const ForFamilies = lazy(() => import('./pages/ForFamilies').then(m => ({ default: m.ForFamilies })));
 
 /** Reverse guard: redirects to /hall/events if already logged in */
@@ -85,6 +86,9 @@ export default function App() {
                     </Route>
                     <Route element={<AdminRoute requiredRole="coffee_mornings" />}>
                       <Route path="/admin/coffee-morning" element={<AdminCoffeeMorning />} />
+                    </Route>
+                    <Route element={<AdminRoute requiredRole="newsletter" />}>
+                      <Route path="/admin/subscribers" element={<AdminSubscribers />} />
                     </Route>
 
                     {/* Master Admin restricted route */}

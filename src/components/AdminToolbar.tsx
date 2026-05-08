@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield, BookOpen, Users, CalendarDays, UsersRound, Coffee, Landmark, Calendar, Settings } from 'lucide-react';
+import { LogOut, UserRoundCog, ChevronDown, ChevronUp, Shield, BookOpen, Users, CalendarDays, UsersRound, Coffee, Landmark, Calendar, Settings, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function AdminToolbar() {
@@ -74,6 +74,14 @@ export function AdminToolbar() {
             title: 'Manage Churches',
             to: '/churches',
             icon: Landmark,
+            className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
+        } : null,
+        hasAssignedRole('newsletter') || isMasterAdmin ? {
+            key: 'subscribers',
+            label: 'Manage Subscribers',
+            title: 'Manage Subscribers',
+            to: '/admin/subscribers',
+            icon: Mail,
             className: 'bg-primary-600 border border-primary-700 hover:bg-primary-700 text-white',
         } : null,
     ].filter(Boolean);
