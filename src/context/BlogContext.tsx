@@ -17,6 +17,7 @@ export type BlogPostRow = {
     published: boolean;
     published_at: string | null;
     featured: boolean;
+    author: string | null;
 };
 
 type BlogContextType = {

@@ -84,7 +84,7 @@ export function Blog() {
         return matchesCategory && matchesSearch;
     });
 
-    // In the new data model, we rely on the 'featured' flag or just the first item
+    // Use the admin-set 'featured' flag, falling back to the most recent post.
     const featuredPost = filteredPosts.find(p => p.featured) || filteredPosts[0];
     const sidePosts = filteredPosts.filter(p => p.id !== featuredPost?.id).slice(0, 3);
     const sidePostIds = new Set(sidePosts.map(p => p.id));
@@ -95,7 +95,7 @@ export function Blog() {
             {/* Embedded responsive styles */}
             <style>{`
         @media (min-width: 1024px) {
-          .blog-popular-grid {
+          .blog-featured-grid {
             grid-template-columns: 1fr 1fr !important;
           }
         }
@@ -233,38 +233,26 @@ export function Blog() {
                 </div>
             ) : (
                 <>
-                    {/* Popular Articles Section */}
+                    {/* Featured + Side Articles */}
             {filteredPosts.length > 0 ? (
                 <section
                     className="mx-auto blog-section"
                     style={{ maxWidth: "80rem", paddingTop: "64px", paddingBottom: "40px", paddingLeft: "16px", paddingRight: "16px" }}
                 >
-                    <p
-                        className="text-sm"
-                        style={{
-                            color: "#5c6555",
-                            fontWeight: 600,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.08em",
-                            marginBottom: "8px",
-                        }}
-                    >
-                        What&apos;s New
-                    </p>
                     <h2
                         style={{
                             fontFamily: "var(--font-family-serif)",
                             fontSize: "clamp(1.5rem, 3vw, 2.25rem)",
                             fontWeight: 400,
                             color: "#2d2d2d",
-                            marginBottom: "40px",
+                            marginBottom: "32px",
                         }}
                     >
-                        Popular Articles
+                        Articles
                     </h2>
 
                     <div
-                        className="grid blog-popular-grid"
+                        className="grid blog-featured-grid"
                         style={{
                             gridTemplateColumns: "1fr",
                             gap: "32px",
@@ -317,6 +305,11 @@ export function Blog() {
                                     <p className="flex-1 text-sm" style={{ color: "#666", lineHeight: 1.65, marginBottom: "16px" }}>
                                         {featuredPost.excerpt}
                                     </p>
+                                    {featuredPost.author && (
+                                        <p style={{ fontSize: "0.8rem", color: "#6b6b6b", marginBottom: "12px" }}>
+                                            By {featuredPost.author}
+                                        </p>
+                                    )}
                                     <div className="flex items-center justify-between mt-auto">
                                         <CategoryBadge category={featuredPost.category} size="md" />
                                         <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }}>{formatDate(featuredPost.published_at || featuredPost.created_at)}</span>
@@ -392,8 +385,11 @@ export function Blog() {
                                                 {post.excerpt}
                                             </p>
                                         </div>
-                                        <div className="flex items-center" style={{ marginTop: "8px", gap: "12px" }}>
+                                        <div className="flex items-center flex-wrap" style={{ marginTop: "8px", gap: "12px" }}>
                                             <CategoryBadge category={post.category} />
+                                            {post.author && (
+                                                <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }}>By {post.author}</span>
+                                            )}
                                             <span style={{ fontSize: "0.75rem", color: "#6b6b6b" }}>
                                                 {getReadTime(post.content_markdown)}
                                             </span>
@@ -423,7 +419,7 @@ export function Blog() {
                 </section>
             )}
 
-            {/* All Articles Grid */}
+            {/* More Stories Grid */}
             {remainingPosts.length > 0 && (
                 <section
                     className="mx-auto blog-section"
@@ -507,6 +503,11 @@ export function Blog() {
                                     >
                                         {post.excerpt}
                                     </p>
+                                    {post.author && (
+                                        <p style={{ fontSize: "0.75rem", color: "#6b6b6b", marginBottom: "10px" }}>
+                                            By {post.author}
+                                        </p>
+                                    )}
                                     <div className="flex items-center justify-between">
                                         <CategoryBadge category={post.category} />
                                         <div className="flex items-center" style={{ gap: "8px" }}>

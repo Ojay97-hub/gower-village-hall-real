@@ -49,8 +49,12 @@ create table if not exists public.blog_posts (
   hero_image_url text null,
   published boolean not null default false,
   published_at timestamptz null,
-  featured boolean not null default false
+  featured boolean not null default false,
+  author text null
 );
+
+-- Migration: add author column for existing installs
+alter table public.blog_posts add column if not exists author text null;
 
 alter table public.blog_posts enable row level security;
 

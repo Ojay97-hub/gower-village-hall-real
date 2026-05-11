@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, ChevronRight, Loader2, User } from "lucide-react";
 import type { Category } from "../types/blog";
 import { Users, TreePine, Megaphone } from "lucide-react";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -8,6 +8,8 @@ import fallbackEvents from "../assets/cake-morning-summer.jpeg";
 import fallbackNature from "../assets/bell-flower.jpeg";
 import fallbackHeritage from "../assets/st-nicholas-church.png";
 import { useBlog } from "../context/BlogContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const categoryIcons: Record<Exclude<Category, "All">, React.ReactNode> = {
     Community: <Users style={{ width: "16px", height: "16px" }} />,
@@ -181,7 +183,13 @@ export function ArticlePage() {
                         {categoryIcons[post.category]}
                         {post.category}
                     </span>
-                    <div className="flex items-center" style={{ gap: "16px", fontSize: "0.85rem", color: "#888" }}>
+                    <div className="flex items-center flex-wrap" style={{ gap: "16px", fontSize: "0.85rem", color: "#888" }}>
+                        {post.author && (
+                            <span className="inline-flex items-center" style={{ gap: "6px" }}>
+                                <User style={{ width: "14px", height: "14px" }} />
+                                By {post.author}
+                            </span>
+                        )}
                         <span className="inline-flex items-center" style={{ gap: "6px" }}>
                             <Calendar style={{ width: "14px", height: "14px" }} />
                             {formatDate(post.published_at || post.created_at)}
@@ -231,12 +239,49 @@ export function ArticlePage() {
                 <div style={{ height: "1px", backgroundColor: "#e5e5e0", marginBottom: "32px" }} />
 
                 {/* Body Content */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px", color: "#444" }}>
-                    {post.content_markdown.split(/\n\n+/).map((paragraph, i) => (
-                        <p key={i} style={{ fontSize: "1.125rem", lineHeight: "1.75", whiteSpace: "pre-wrap" }}>
-                            {paragraph}
-                        </p>
-                    ))}
+                <div className="article-body" style={{ display: "flex", flexDirection: "column", gap: "20px", color: "#444" }}>
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                            p: ({ children }) => (
+                                <p style={{ fontSize: "1.125rem", lineHeight: "1.75", whiteSpace: "pre-wrap", margin: 0 }}>
+                                    {children}
+                                </p>
+                            ),
+                            a: ({ href, children }) => {
+                                const isExternal = !!href && /^(https?:)?\/\//i.test(href);
+                                return (
+                                    <a
+                                        href={href}
+                                        target={isExternal ? "_blank" : undefined}
+                                        rel={isExternal ? "noopener noreferrer" : undefined}
+                                        style={{
+                                            color: "#5c6555",
+                                            textDecoration: "underline",
+                                            textDecorationColor: "#8e9a87",
+                                            textUnderlineOffset: "3px",
+                                        }}
+                                    >
+                                        {children}
+                                    </a>
+                                );
+                            },
+                            ul: ({ children }) => (
+                                <ul style={{ fontSize: "1.125rem", lineHeight: "1.75", paddingLeft: "1.5rem", listStyle: "disc" }}>
+                                    {children}
+                                </ul>
+                            ),
+                            ol: ({ children }) => (
+                                <ol style={{ fontSize: "1.125rem", lineHeight: "1.75", paddingLeft: "1.5rem", listStyle: "decimal" }}>
+                                    {children}
+                                </ol>
+                            ),
+                            strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
+                            em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
+                        }}
+                    >
+                        {post.content_markdown}
+                    </ReactMarkdown>
                 </div>
 
                 {/* Divider */}

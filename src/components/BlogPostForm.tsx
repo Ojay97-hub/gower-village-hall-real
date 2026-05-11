@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, ImagePlus, Loader2, RotateCcw } from "lucide-react";
+import { X, ImagePlus, Loader2, RotateCcw, Link as LinkIcon } from "lucide-react";
 import type { BlogPostRow } from "../context/BlogContext";
 
 const MAX_WORDS = 500;
@@ -15,6 +15,7 @@ type DraftData = {
     published: boolean;
     featured: boolean;
     heroImageUrl: string;
+    author: string;
     editingPostId?: string;
     savedAt: number;
 };
@@ -61,13 +62,22 @@ export function BlogPostForm({ post, onSubmit, onClose }: BlogPostFormProps) {
     const [published, setPublished] = useState(savedDraft?.published ?? post?.published ?? false);
     const [featured, setFeatured] = useState(savedDraft?.featured ?? post?.featured ?? false);
     const [heroImageUrl, setHeroImageUrl] = useState(savedDraft?.heroImageUrl ?? post?.hero_image_url ?? "");
+    const [author, setAuthor] = useState(savedDraft?.author ?? post?.author ?? "");
     const [newImageFile, setNewImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(
         hasSavedDraft ? (savedDraft!.heroImageUrl || null) : (post?.hero_image_url || null)
     );
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDraftBanner, setShowDraftBanner] = useState(hasSavedDraft);
+    const [linkModalOpen, setLinkModalOpen] = useState(false);
+    const [linkText, setLinkText] = useState("");
+    const [linkUrl, setLinkUrl] = useState("");
+    const [linkError, setLinkError] = useState<string | null>(null);
+    const linkSelectionRef = useRef<{ start: number; end: number } | null>(null);
+    const linkTextInputRef = useRef<HTMLInputElement>(null);
+    const linkUrlInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
     const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Auto-save draft to localStorage (debounced)
@@ -81,11 +91,12 @@ export function BlogPostForm({ post, onSubmit, onClose }: BlogPostFormProps) {
             published,
             featured,
             heroImageUrl,
+            author,
             editingPostId: post?.id,
             savedAt: Date.now(),
         };
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-    }, [title, slug, excerpt, contentMarkdown, category, published, featured, heroImageUrl, post?.id]);
+    }, [title, slug, excerpt, contentMarkdown, category, published, featured, heroImageUrl, author, post?.id]);
 
     useEffect(() => {
         // Don't auto-save if form is completely empty (just opened, no input yet)
@@ -109,10 +120,90 @@ export function BlogPostForm({ post, onSubmit, onClose }: BlogPostFormProps) {
         setPublished(post?.published ?? false);
         setFeatured(post?.featured ?? false);
         setHeroImageUrl(post?.hero_image_url ?? "");
+        setAuthor(post?.author ?? "");
         setImagePreview(post?.hero_image_url || null);
         setNewImageFile(null);
         setShowDraftBanner(false);
     };
+
+    // Open the link modal, pre-filling with any selected text in the textarea.
+    const handleOpenLinkModal = () => {
+        const textarea = contentTextareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = contentMarkdown.slice(start, end);
+
+        linkSelectionRef.current = { start, end };
+        setLinkText(selected);
+        setLinkUrl("");
+        setLinkError(null);
+        setLinkModalOpen(true);
+    };
+
+    const handleCloseLinkModal = () => {
+        setLinkModalOpen(false);
+        setLinkError(null);
+    };
+
+    const handleConfirmLink = () => {
+        const textarea = contentTextareaRef.current;
+        const selection = linkSelectionRef.current;
+        if (!textarea || !selection) return;
+
+        const trimmedUrl = linkUrl.trim();
+        const trimmedText = linkText.trim();
+
+        if (!trimmedUrl) {
+            setLinkError("Please enter a URL.");
+            linkUrlInputRef.current?.focus();
+            return;
+        }
+        if (!trimmedText) {
+            setLinkError("Please enter the text to display.");
+            linkTextInputRef.current?.focus();
+            return;
+        }
+
+        const safeUrl = /^(https?:|mailto:|tel:|\/|#)/i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
+        const markdown = `[${trimmedText}](${safeUrl})`;
+        const { start, end } = selection;
+        const next = contentMarkdown.slice(0, start) + markdown + contentMarkdown.slice(end);
+
+        setContentMarkdown(next);
+        setLinkModalOpen(false);
+        setLinkError(null);
+
+        requestAnimationFrame(() => {
+            textarea.focus();
+            const caret = start + markdown.length;
+            textarea.setSelectionRange(caret, caret);
+        });
+    };
+
+    // Auto-focus the appropriate field when the modal opens
+    useEffect(() => {
+        if (!linkModalOpen) return;
+        const t = setTimeout(() => {
+            if (linkText) {
+                linkUrlInputRef.current?.focus();
+            } else {
+                linkTextInputRef.current?.focus();
+            }
+        }, 30);
+        return () => clearTimeout(t);
+    }, [linkModalOpen, linkText]);
+
+    // Close on Escape
+    useEffect(() => {
+        if (!linkModalOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") handleCloseLinkModal();
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [linkModalOpen]);
 
     // Auto-generate slug from title if it's a new post and slug is untouched
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,6 +260,7 @@ export function BlogPostForm({ post, onSubmit, onClose }: BlogPostFormProps) {
                     featured,
                     published_at: published && !post?.published_at ? new Date().toISOString() : post?.published_at || null,
                     hero_image_url: heroImageUrl, // This might be overwritten if newImageFile exists
+                    author: author.trim() ? author.trim() : null,
                 },
                 newImageFile
             );
@@ -327,7 +419,19 @@ export function BlogPostForm({ post, onSubmit, onClose }: BlogPostFormProps) {
                                 )}
                             </div>
 
-                            {/* Excerpt */}
+                            {/* Author & Excerpt */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                                <input
+                                    type="text"
+                                    value={author}
+                                    onChange={(e) => setAuthor(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="e.g. Jane Smith"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">Optional. Shown on the article and in listings.</p>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Excerpt (Short description)</label>
                                 <textarea
@@ -348,12 +452,27 @@ export function BlogPostForm({ post, onSubmit, onClose }: BlogPostFormProps) {
                                         {countWords(contentMarkdown)} / {MAX_WORDS} words
                                     </span>
                                 </div>
+                                <div className="flex items-center gap-2 px-3 py-2 border border-b-0 border-gray-200 rounded-t-xl bg-gray-50">
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenLinkModal}
+                                        className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-primary-50 hover:text-primary-700 hover:border-primary-200 transition-colors"
+                                        title="Insert hyperlink (select text first to turn it into a link)"
+                                    >
+                                        <LinkIcon className="w-3.5 h-3.5" />
+                                        Insert link
+                                    </button>
+                                    <span className="text-xs text-gray-500">
+                                        Select text first to turn it into a link.
+                                    </span>
+                                </div>
                                 <textarea
                                     required
+                                    ref={contentTextareaRef}
                                     value={contentMarkdown}
                                     onChange={(e) => setContentMarkdown(e.target.value)}
-                                    className={`w-full flex-1 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-y min-h-[400px] text-sm leading-relaxed ${countWords(contentMarkdown) > MAX_WORDS ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                                    placeholder="Write your article content here..."
+                                    className={`w-full flex-1 px-4 py-3 border rounded-b-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all resize-y min-h-[400px] text-sm leading-relaxed ${countWords(contentMarkdown) > MAX_WORDS ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                                    placeholder="Write your article content here... Use the Insert link button to add hyperlinks."
                                 />
                                 {countWords(contentMarkdown) > MAX_WORDS && (
                                     <p className="mt-1.5 text-xs text-red-600">
@@ -392,6 +511,100 @@ export function BlogPostForm({ post, onSubmit, onClose }: BlogPostFormProps) {
                     </button>
                 </div>
             </div>
+
+            {linkModalOpen && (
+                <div
+                    className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                    onClick={handleCloseLinkModal}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="insert-link-title"
+                        className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">
+                                    <LinkIcon className="w-4 h-4" />
+                                </div>
+                                <h3 id="insert-link-title" className="text-lg font-bold font-serif text-gray-900">
+                                    Insert link
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleCloseLinkModal}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                                aria-label="Close"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="px-6 py-5 space-y-4">
+                            <div>
+                                <label htmlFor="link-text" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Text to display
+                                </label>
+                                <input
+                                    id="link-text"
+                                    ref={linkTextInputRef}
+                                    type="text"
+                                    value={linkText}
+                                    onChange={(e) => { setLinkText(e.target.value); setLinkError(null); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleConfirmLink(); } }}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="e.g. our village website"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="link-url" className="block text-sm font-medium text-gray-700 mb-1">
+                                    URL
+                                </label>
+                                <input
+                                    id="link-url"
+                                    ref={linkUrlInputRef}
+                                    type="text"
+                                    value={linkUrl}
+                                    onChange={(e) => { setLinkUrl(e.target.value); setLinkError(null); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleConfirmLink(); } }}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="https://example.com"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Tip: you can paste a full address or just <span className="font-mono">example.com</span> — we'll add <span className="font-mono">https://</span> for you.
+                                </p>
+                            </div>
+
+                            {linkError && (
+                                <div className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+                                    {linkError}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+                            <button
+                                type="button"
+                                onClick={handleCloseLinkModal}
+                                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmLink}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-colors"
+                            >
+                                <LinkIcon className="w-4 h-4" />
+                                Insert link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
