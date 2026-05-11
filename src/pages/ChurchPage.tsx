@@ -13,6 +13,7 @@ import {
   updateContentBlock, updateChurch,
 } from "../services/churchService";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { AddToCalendarButton } from "../components/events/AddToCalendarButton";
 import { useAuth } from "../context/AuthContext";
 import type { Church, ChurchEvent, Service } from "../types/church";
 
@@ -964,6 +965,16 @@ export function ChurchPage() {
                               {event.description && (
                                 <p className="text-base text-gray-600 leading-snug mt-2">{event.description}</p>
                               )}
+                              <div className="mt-3">
+                                <AddToCalendarButton
+                                  title={event.title}
+                                  description={event.description}
+                                  location={[church?.name, church?.address].filter(Boolean).join(', ') || undefined}
+                                  startDate={d}
+                                  endDate={null}
+                                  allDay={false}
+                                />
+                              </div>
                             </div>
                             {/* Admin delete */}
                             {isChurchAdmin && (

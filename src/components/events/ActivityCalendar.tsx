@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { useEvents } from '../../context/EventContext';
 import { Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
@@ -164,6 +164,28 @@ export function ActivityCalendar({ privateBookings = [] }: ActivityCalendarProps
     const { events, regularActivities, loading } = useEvents();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+    const defaultedRef = useRef(false);
+
+    useEffect(() => {
+        if (defaultedRef.current || loading) return;
+        defaultedRef.current = true;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const nextEventDate = events
+            .map(event => {
+                const [y, m, d] = (event.date as string).split('-').map(Number);
+                return new Date(y, m - 1, d);
+            })
+            .filter(date => date.getTime() >= today.getTime())
+            .sort((a, b) => a.getTime() - b.getTime())[0];
+
+        if (nextEventDate) {
+            setSelectedDate(nextEventDate);
+            setCurrentMonth(new Date(nextEventDate.getFullYear(), nextEventDate.getMonth(), 1));
+        }
+    }, [events, loading]);
 
     const calendarItems = useMemo(() => {
         const items: CalendarItem[] = [];

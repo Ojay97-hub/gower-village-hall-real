@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { EventForm } from '../components/events/EventForm';
 import { RegularActivityForm } from '../components/events/RegularActivityForm';
 import { ActivityCalendar, PrivateBooking } from '../components/events/ActivityCalendar';
+import { AddToCalendarButton } from '../components/events/AddToCalendarButton';
 import { supabase } from '../lib/supabaseClient';
 import {
     Calendar, Clock, MapPin, Plus, Edit2, Trash2, AlertTriangle, X,
@@ -100,6 +101,25 @@ function sessionOverlapsEvent(eventType: string | null, eventStartTime: string |
         if (s === 'evening' && hours >= 17) return true;
         return false;
     });
+}
+
+function buildEventDateTimes(
+    dateStr: string,
+    startTime: string | null,
+    endTime: string | null,
+): { start: Date; end: Date | null; allDay: boolean } {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (!startTime) {
+        return { start: new Date(y, m - 1, d), end: null, allDay: true };
+    }
+    const [sh, sm] = startTime.split(':').map(Number);
+    const start = new Date(y, m - 1, d, sh, sm);
+    let end: Date | null = null;
+    if (endTime) {
+        const [eh, em] = endTime.split(':').map(Number);
+        end = new Date(y, m - 1, d, eh, em);
+    }
+    return { start, end, allDay: false };
 }
 
 function formatSession(eventType: string | null): string {
@@ -509,7 +529,7 @@ export function Events() {
                         {events.filter(event => new Date(event.date) >= new Date(new Date().toDateString())).map((event) => (
                             <div
                                 key={event.id}
-                                className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden"
+                                className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
                             >
                                 <div className="p-4 sm:p-6 md:p-8 flex gap-4 sm:gap-6 md:gap-8">
                                     {/* Date Side - Always on left */}
@@ -527,7 +547,7 @@ export function Events() {
                                     {/* Content Side */}
                                     <div className="grow min-w-0">
                                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4 w-full">
-                                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight group-hover:text-primary-600 transition-colors min-w-0 flex-1">
+                                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight min-w-0 flex-1">
                                                 {event.title}
                                             </h3>
 
@@ -579,6 +599,27 @@ export function Events() {
                                                     <span className="font-medium">{event.location}</span>
                                                 </div>
                                             )}
+
+                                            {(() => {
+                                                const { start, end, allDay } = buildEventDateTimes(
+                                                    event.date,
+                                                    event.start_time,
+                                                    event.end_time,
+                                                );
+                                                return (
+                                                    <AddToCalendarButton
+                                                        title={event.title}
+                                                        description={event.description}
+                                                        location={event.location ?? 'Penmaen and Nicholaston Village Hall'}
+                                                        startDate={start}
+                                                        endDate={end}
+                                                        allDay={allDay}
+                                                        className="group/cta cursor-pointer flex items-center gap-3 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-primary-600 hover:text-white hover:border-primary-600 hover:shadow-md hover:-translate-y-0.5 px-4 py-2 rounded-xl border border-gray-100 transition-all duration-200"
+                                                        iconClassName="w-4 h-4 text-primary-500 group-hover/cta:text-white transition-colors duration-200"
+                                                        chevronClassName="w-3.5 h-3.5 text-gray-400 group-hover/cta:text-white transition-colors duration-200"
+                                                    />
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
