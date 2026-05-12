@@ -34,13 +34,13 @@ export function Contact() {
                 <h2 className="text-lg font-semibold">Address</h2>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
-                Penmaen Parish Hall
+                2 Tor View
                 <br />
                 Penmaen
                 <br />
-                Gower, Swansea
+                Swansea
                 <br />
-                SA3 2HH
+                SA3 2HJ
               </p>
             </div>
 
