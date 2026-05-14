@@ -39,8 +39,7 @@ export function Header() {
       children: [
         { label: "Book the Hall", path: "/hall" },
         { label: "Events Schedule", path: "/hall/events" },
-        { label: "Coffee Mornings", path: "/hall/coffee-morning" },
-        { label: "For Families", path: "/hall/for-families" }
+        { label: "Coffee Mornings", path: "/hall/coffee-morning" }
       ]
     },
     {
