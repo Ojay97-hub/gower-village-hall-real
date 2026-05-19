@@ -1,14 +1,30 @@
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Building2, BookOpen, Church, Users, ArrowRight, Coffee } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import torbayImg from "../assets/torbay.jpeg";
 import threeCliffsImg from "../assets/3-cliffs-sign.jpeg";
 import cakeMorningImg from "../assets/cake-morning-summer.jpeg";
+import nicholastonSignImg from "../assets/nicholaston-sign-hd.webp";
 
-const churchImg = "/images/updated-penmaen-sign.webp";
+const penmaenSignImg = "/images/updated-penmaen-sign.webp";
 const leftHeroImg = "/images/left-hero-image.jpeg";
 
+const heroImages = [
+  { src: penmaenSignImg, alt: "Penmaen Sign" },
+  { src: nicholastonSignImg, alt: "Nicholaston Sign" },
+];
+
 export function Home() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % heroImages.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section - Split Design */}
@@ -48,16 +64,20 @@ export function Home() {
           </div>
         </div>
 
-        {/* Right Side - Village Hall Image */}
+        {/* Right Side - Village Sign Carousel */}
         <div className="relative overflow-hidden h-[300px] md:h-auto">
-          <ImageWithFallback
-            src={churchImg}
-            alt="Penmaen Sign"
-            className="w-full h-full object-cover"
-            fetchPriority="high"
-            loading="eager"
-          />
-          <div className="absolute inset-0 bg-linear-to-br from-amber-900/20 to-orange-800/30"></div>
+          {heroImages.map((img, i) => (
+            <ImageWithFallback
+              key={img.src}
+              src={img.src}
+              alt={img.alt}
+              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+              style={{ opacity: i === activeIndex ? 1 : 0 }}
+              fetchPriority={i === 0 ? "high" : "low"}
+              loading={i === 0 ? "eager" : "lazy"}
+            />
+          ))}
+          <div className="absolute inset-0 bg-linear-to-br from-amber-900/20 to-orange-800/30 pointer-events-none"></div>
         </div>
       </section>
 
